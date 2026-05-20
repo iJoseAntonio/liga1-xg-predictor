@@ -16,7 +16,7 @@ print("REENTRENAMIENTO — Liga 1 xG Predictor")
 print("=" * 55)
 
 # ── 1. Cargar dataset actualizado ─────────────────────────────────────────────
-df = pd.read_csv('BD/bd_liga1_Peru.csv', sep=';')
+df = pd.read_csv('bd_liga1_Peru.csv', sep=';')
 print(f"Dataset cargado: {df.shape[0]} partidos")
 
 # ── 2. Reestructurar (mismo pipeline del notebook) ────────────────────────────
