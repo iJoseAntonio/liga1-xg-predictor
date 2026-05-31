@@ -63,11 +63,15 @@ def cargar_recursos():
         print(f"ADVERTENCIA: {MODEL_PATH} no encontrado.")
 
     if os.path.exists(DATA_PATH):
-        df_historico = pd.read_csv(DATA_PATH, sep=';')
-        df_historico['fecha'] = pd.to_datetime(
-            df_historico['fecha'], format='%d/%m/%Y', errors='coerce'
-        )
-        print(f"Datos históricos cargados: {len(df_historico)} partidos.")
+        try:
+            df_historico = pd.read_csv(DATA_PATH, sep=';', encoding='utf-8-sig')
+            df_historico.columns = df_historico.columns.str.strip()
+            df_historico['fecha'] = pd.to_datetime(
+                df_historico['fecha'], format='%d/%m/%Y', errors='coerce'
+            )
+            print(f"Datos históricos cargados: {len(df_historico)} partidos.")
+        except Exception as e:
+            print(f"ERROR cargando {DATA_PATH}: {e}")
     else:
         print(f"ADVERTENCIA: {DATA_PATH} no encontrado.")
 
