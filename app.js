@@ -9,7 +9,7 @@
 const CSV_PATH         = 'tabla_liga1_peru.csv';
 const MATCHES_CSV_PATH = 'partidos_liga1_2026.csv';
 // Reemplaza con tu URL de Render una vez desplegado:
-const API_URL          = 'https://liga1-xg-predictor-1.onrender.com';
+const API_URL          = 'https://liga1-xg-predictor.onrender.com';
 
 // Map de nombres de equipos del CSV → ID de Sofascore para los escudos
 const TEAM_IDS = {
