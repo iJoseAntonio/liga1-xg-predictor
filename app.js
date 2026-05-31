@@ -156,6 +156,7 @@ function loadMatchesCSV() {
 
       buildRoundSelect();
       renderMatches(currentRound);
+      if (isPredTabActive()) renderPredictionsTab(currentRound);
     },
   });
 }
@@ -317,33 +318,29 @@ function renderMatches(round) {
 }
 
 // ── PREDICCIONES API ──────────────────────────────────────────────────────
+async function getPrediction(m) {
+  const key = `${m.homeName}|${m.awayName}`;
+  if (predCache[key]) return predCache[key];
+  try {
+    const url = `${API_URL}/predict-match` +
+      `?home=${encodeURIComponent(m.homeName)}` +
+      `&away=${encodeURIComponent(m.awayName)}`;
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const data = await res.json();
+    predCache[key] = data;
+    return data;
+  } catch (_) { return null; }
+}
+
 async function fetchPredictions(round, matches) {
   const unplayed = matches
     .map((m, i) => ({ ...m, idx: i }))
     .filter(m => m.sh === null);
-
   if (!unplayed.length) return;
-
   for (const m of unplayed) {
-    const key = `${m.homeName}|${m.awayName}`;
-
-    if (predCache[key]) {
-      applyPrediction(round, m.idx, predCache[key]);
-      continue;
-    }
-
-    try {
-      const url = `${API_URL}/predict-match` +
-        `?home=${encodeURIComponent(m.homeName)}` +
-        `&away=${encodeURIComponent(m.awayName)}`;
-      const res  = await fetch(url);
-      if (!res.ok) continue;
-      const data = await res.json();
-      predCache[key] = data;
-      applyPrediction(round, m.idx, data);
-    } catch (_) {
-      // API dormida o sin conexión — falla silenciosa
-    }
+    const data = await getPrediction(m);
+    if (data) applyPrediction(round, m.idx, data);
   }
 }
 
@@ -380,6 +377,7 @@ function changeRound(dir) {
   currentRound = next;
   $roundSelect().value = currentRound;
   renderMatches(currentRound);
+  if (isPredTabActive()) renderPredictionsTab(currentRound);
 }
 
 // ── FAVORITOS ─────────────────────────────────────────────────────────────
@@ -413,8 +411,105 @@ function setupMainTabs() {
       tab.classList.add('active');
       const target = document.getElementById(`tab-${tab.dataset.tab}`);
       if (target) target.classList.add('active');
+      if (tab.dataset.tab === 'predicciones') renderPredictionsTab(currentRound);
     });
   });
+}
+
+function isPredTabActive() {
+  const t = document.querySelector('.main-tab.active');
+  return t && t.dataset.tab === 'predicciones';
+}
+
+// ── PREDICCIONES TAB ──────────────────────────────────────────────────────
+async function renderPredictionsTab(round) {
+  const container = document.getElementById('pred-tab-content');
+  const subtitle  = document.getElementById('pred-tab-round');
+  if (!container) return;
+
+  if (subtitle) subtitle.textContent = `Apertura — Jornada ${round}`;
+
+  const matches = MATCHES[round] || [];
+  if (!matches.length) {
+    container.innerHTML = '<div class="empty-tab">Sin partidos para esta jornada</div>';
+    return;
+  }
+
+  container.innerHTML =
+    `<div style="padding:16px;color:var(--text3);font-size:12px">Cargando predicciones…</div>`;
+
+  // Pide todas las predicciones en paralelo (usa caché cuando está disponible)
+  const preds = await Promise.all(matches.map(m => getPrediction(m)));
+
+  const html = matches.map((m, i) => {
+    const data = preds[i];
+    if (!data) {
+      return `<div class="pred-card" style="padding:14px;color:var(--text3);font-size:12px;
+              text-align:center">${m.homeName} vs ${m.awayName} — sin datos del modelo</div>`;
+    }
+    return `<div class="pred-card" style="animation-delay:${i * 0.05}s">
+              ${buildPredCardHTML(m, data)}
+            </div>`;
+  }).join('');
+
+  container.innerHTML = html;
+}
+
+function buildPredCardHTML(m, data) {
+  const finished = m.sh !== null;
+  const hp = data.local.probabilidad;
+  const ap = data.visitante.probabilidad;
+  const hHigh = data.local.alto_rendimiento;
+  const aHigh = data.visitante.alto_rendimiento;
+
+  // Verificación simple: el modelo predijo alto rendimiento ↔ el equipo marcó
+  const hOk   = finished ? (hHigh === (m.sh >= 1)) : null;
+  const aOk   = finished ? (aHigh === (m.sa >= 1)) : null;
+  const hBadge = hOk !== null
+    ? `<span class="pred-check ${hOk ? 'ok' : 'fail'}">${hOk ? '✓' : '✗'}</span>` : '';
+  const aBadge = aOk !== null
+    ? `<span class="pred-check ${aOk ? 'ok' : 'fail'}">${aOk ? '✓' : '✗'}</span>` : '';
+
+  const centerHtml = finished
+    ? `<div class="pred-scorebox">${m.sh}<span>-</span>${m.sa}</div>
+       <div class="pred-vs">FT</div>`
+    : `<div class="pred-vs">VS</div>
+       ${m.date ? `<div class="pred-matchdate">${m.date}</div>` : ''}`;
+
+  return `
+    <div class="pred-team home">
+      <div class="pred-team-head">
+        <img class="pred-logo" src="https://img.sofascore.com/api/v1/team/${m.homeId}/image"
+             alt="${m.homeName}" onerror="this.style.opacity=0.15">
+        <span class="pred-name">${m.homeName}</span>
+        ${hBadge}
+      </div>
+      <div class="pred-bar-wrap">
+        <div class="pred-bar-fill ${hHigh ? 'p-high' : 'p-low'}" style="width:${hp}%"></div>
+      </div>
+      <div class="pred-bottom">
+        <span class="pred-pct ${hHigh ? 'p-high' : 'p-low'}">${hp}%</span>
+        <span class="pred-label">${hHigh ? 'Alto rendimiento' : 'Bajo rendimiento'}</span>
+      </div>
+    </div>
+
+    <div class="pred-center">${centerHtml}</div>
+
+    <div class="pred-team away">
+      <div class="pred-team-head away">
+        ${aBadge}
+        <span class="pred-name">${m.awayName}</span>
+        <img class="pred-logo" src="https://img.sofascore.com/api/v1/team/${m.awayId}/image"
+             alt="${m.awayName}" onerror="this.style.opacity=0.15">
+      </div>
+      <div class="pred-bar-wrap away">
+        <div class="pred-bar-fill ${aHigh ? 'p-high' : 'p-low'}" style="width:${ap}%"></div>
+      </div>
+      <div class="pred-bottom away">
+        <span class="pred-pct ${aHigh ? 'p-high' : 'p-low'}">${ap}%</span>
+        <span class="pred-label">${aHigh ? 'Alto rendimiento' : 'Bajo rendimiento'}</span>
+      </div>
+    </div>`;
 }
 
 function setupSubTabs() {
@@ -444,6 +539,7 @@ function setupRoundNav() {
   $roundSelect().addEventListener('change', (e) => {
     currentRound = parseInt(e.target.value);
     renderMatches(currentRound);
+    if (isPredTabActive()) renderPredictionsTab(currentRound);
   });
 }
 
