@@ -57,8 +57,11 @@ FEATURES_FINAL = (
 def cargar_recursos():
     global modelo, df_historico
     if os.path.exists(MODEL_PATH):
-        modelo = joblib.load(MODEL_PATH)
-        print("Modelo cargado correctamente.")
+        try:
+            modelo = joblib.load(MODEL_PATH)
+            print("Modelo cargado correctamente.")
+        except Exception as e:
+            print(f"ERROR cargando modelo: {e}")
     else:
         print(f"ADVERTENCIA: {MODEL_PATH} no encontrado.")
 
