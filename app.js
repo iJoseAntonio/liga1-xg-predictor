@@ -318,6 +318,21 @@ function renderMatches(round) {
 }
 
 // ── PREDICCIONES API ──────────────────────────────────────────────────────
+async function getMatchResult(m) {
+  const key = `result|${m.homeName}|${m.awayName}`;
+  if (predCache[key]) return predCache[key];
+  try {
+    const url = `${API_URL}/match-result` +
+      `?home=${encodeURIComponent(m.homeName)}` +
+      `&away=${encodeURIComponent(m.awayName)}`;
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const data = await res.json();
+    predCache[key] = data;
+    return data;
+  } catch (_) { return null; }
+}
+
 async function getPrediction(m) {
   const key = `${m.homeName}|${m.awayName}`;
   if (predCache[key]) return predCache[key];
@@ -438,37 +453,51 @@ async function renderPredictionsTab(round) {
   container.innerHTML =
     `<div style="padding:16px;color:var(--text3);font-size:12px">Cargando predicciones…</div>`;
 
-  // Pide todas las predicciones en paralelo (usa caché cuando está disponible)
-  const preds = await Promise.all(matches.map(m => getPrediction(m)));
+  // Predicciones del modelo + resultados reales en paralelo
+  const [preds, results] = await Promise.all([
+    Promise.all(matches.map(m => getPrediction(m))),
+    Promise.all(matches.map(m => m.sh !== null ? getMatchResult(m) : Promise.resolve(null))),
+  ]);
 
   const html = matches.map((m, i) => {
-    const data = preds[i];
-    if (!data) {
+    const pred = preds[i];
+    if (!pred) {
       return `<div class="pred-card" style="padding:14px;color:var(--text3);font-size:12px;
               text-align:center">${m.homeName} vs ${m.awayName} — sin datos del modelo</div>`;
     }
     return `<div class="pred-card" style="animation-delay:${i * 0.05}s">
-              ${buildPredCardHTML(m, data)}
+              ${buildPredCardHTML(m, pred, results[i])}
             </div>`;
   }).join('');
 
   container.innerHTML = html;
 }
 
-function buildPredCardHTML(m, data) {
+function buildPredCardHTML(m, data, result = null) {
   const finished = m.sh !== null;
   const hp = data.local.probabilidad;
   const ap = data.visitante.probabilidad;
   const hHigh = data.local.alto_rendimiento;
   const aHigh = data.visitante.alto_rendimiento;
 
-  // Verificación simple: el modelo predijo alto rendimiento ↔ el equipo marcó
-  const hOk   = finished ? (hHigh === (m.sh >= 1)) : null;
-  const aOk   = finished ? (aHigh === (m.sa >= 1)) : null;
+  // Verificación con los 3 criterios reales si el partido ya se jugó
+  const hOk = result
+    ? (hHigh === result.local.cumple_target)
+    : finished ? (hHigh === (m.sh >= 1)) : null;
+  const aOk = result
+    ? (aHigh === result.visitante.cumple_target)
+    : finished ? (aHigh === (m.sa >= 1)) : null;
+
   const hBadge = hOk !== null
     ? `<span class="pred-check ${hOk ? 'ok' : 'fail'}">${hOk ? '✓' : '✗'}</span>` : '';
   const aBadge = aOk !== null
     ? `<span class="pred-check ${aOk ? 'ok' : 'fail'}">${aOk ? '✓' : '✗'}</span>` : '';
+
+  // Estadísticas reales (solo si hay datos del backend)
+  const hReal = result
+    ? `<div class="pred-real">${result.local.goles}G · xG ${result.local.xg} · ${result.local.tiros_puerta} tiros</div>` : '';
+  const aReal = result
+    ? `<div class="pred-real">${result.visitante.goles}G · xG ${result.visitante.xg} · ${result.visitante.tiros_puerta} tiros</div>` : '';
 
   const centerHtml = finished
     ? `<div class="pred-scorebox">${m.sh}<span>-</span>${m.sa}</div>
@@ -490,6 +519,7 @@ function buildPredCardHTML(m, data) {
       <div class="pred-bottom">
         <span class="pred-pct ${hHigh ? 'p-high' : 'p-low'}">${hp}%</span>
         <span class="pred-label">${hHigh ? 'Alto rendimiento' : 'Bajo rendimiento'}</span>
+        ${hReal}
       </div>
     </div>
 
@@ -508,6 +538,7 @@ function buildPredCardHTML(m, data) {
       <div class="pred-bottom away">
         <span class="pred-pct ${aHigh ? 'p-high' : 'p-low'}">${ap}%</span>
         <span class="pred-label">${aHigh ? 'Alto rendimiento' : 'Bajo rendimiento'}</span>
+        ${aReal}
       </div>
     </div>`;
 }

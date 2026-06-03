@@ -810,6 +810,14 @@ img { display: block; }
 .pred-scorebox span { color: var(--text3); font-size: 14px; }
 .pred-matchdate { font-size: 10px; color: var(--text3); }
 
+/* Stats reales del partido */
+.pred-real {
+  font-size: 9px;
+  color: var(--text3);
+  font-family: 'DM Mono', monospace;
+  margin-top: 2px;
+}
+
 /* Check/fail */
 .pred-check {
   font-size: 11px;

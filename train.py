@@ -15,9 +15,14 @@ print("=" * 55)
 print("REENTRENAMIENTO — Liga 1 xG Predictor")
 print("=" * 55)
 
-# ── 1. Cargar dataset actualizado ─────────────────────────────────────────────
-df = pd.read_csv('bd_liga1_Peru.csv', sep=';')
-print(f"Dataset cargado: {df.shape[0]} partidos")
+# ── 1. Cargar dataset y filtrar hasta 19/04/2026 (datos de entrenamiento) ──────
+df = pd.read_csv('bd_liga1.csv', sep=';', encoding='utf-8-sig')
+print(f"Dataset total: {df.shape[0]} partidos")
+
+FECHA_CORTE_ENTRENAMIENTO = pd.Timestamp('2026-04-19')
+df['_fecha_dt'] = pd.to_datetime(df['fecha'], format='%d/%m/%Y', errors='coerce')
+df = df[df['_fecha_dt'] <= FECHA_CORTE_ENTRENAMIENTO].drop(columns=['_fecha_dt']).copy()
+print(f"Dataset filtrado (hasta 19/04/2026): {df.shape[0]} partidos")
 
 # ── 2. Reestructurar (mismo pipeline del notebook) ────────────────────────────
 columnas_estadisticas = [

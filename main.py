@@ -240,6 +240,50 @@ def predecir_equipo(datos: DatosEquipo):
     }
 
 
+@app.get("/match-result")
+def match_result(
+    home: str = Query(..., description="Equipo local"),
+    away: str = Query(..., description="Equipo visitante"),
+):
+    """
+    Devuelve el resultado real del partido y si cada equipo cumplió el target
+    del modelo (xG > 1.5 AND Tiros a puerta > 4 AND Goles >= 1).
+    Ejemplo: /match-result?home=Universitario&away=Sport Huancayo
+    """
+    if df_historico is None:
+        raise HTTPException(status_code=503, detail="Datos no disponibles")
+
+    mask = (
+        (df_historico['equipo_local']     == home) &
+        (df_historico['equipo_visitante'] == away)
+    )
+    found = df_historico[mask]
+
+    if found.empty:
+        raise HTTPException(status_code=404, detail=f"Partido no encontrado: {home} vs {away}")
+
+    row = found.sort_values('fecha', ascending=False).iloc[0]
+
+    def team_stats(suffix: str) -> dict:
+        def n(col):
+            return pd.to_numeric(row.get(f'{col}{suffix}', 0), errors='coerce') or 0.0
+        goles  = int(n('goles'))
+        xg     = round(float(n('Goles esperados (xG)')), 2)
+        tiros  = int(n('Tiros a puerta'))
+        return {
+            "goles":         goles,
+            "xg":            xg,
+            "tiros_puerta":  tiros,
+            "cumple_target": bool(xg > 1.5 and tiros > 4 and goles >= 1),
+        }
+
+    return {
+        "fecha":     row['fecha'].strftime('%d/%m/%Y') if pd.notna(row['fecha']) else None,
+        "local":     team_stats('_local'),
+        "visitante": team_stats('_visitante'),
+    }
+
+
 @app.get("/modelo-info")
 def info_modelo():
     return {
