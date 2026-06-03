@@ -775,13 +775,13 @@ img { display: block; }
   font-family: 'DM Mono', monospace;
   line-height: 1;
 }
-.pred-pct.p-high { color: var(--green); }
-.pred-pct.p-low  { color: var(--red);   }
+.pred-pct.p-high { color: var(--text); }
+.pred-pct.p-low  { color: var(--text); }
 .pred-label {
   font-size: 9px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: var(--text3);
+  color: var(--text);
 }
 
 /* Centro */
@@ -813,7 +813,7 @@ img { display: block; }
 /* Stats reales del partido */
 .pred-real {
   font-size: 9px;
-  color: var(--text3);
+  color: var(--text);
   font-family: 'DM Mono', monospace;
   margin-top: 2px;
 }
