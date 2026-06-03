@@ -156,6 +156,7 @@ function loadMatchesCSV() {
 
       buildRoundSelect();
       renderMatches(currentRound);
+      renderDestacado(currentRound);
       if (isPredTabActive()) renderPredictionsTab(currentRound);
     },
   });
@@ -392,13 +393,80 @@ function changeRound(dir) {
   currentRound = next;
   $roundSelect().value = currentRound;
   renderMatches(currentRound);
+  renderDestacado(currentRound);
   if (isPredTabActive()) renderPredictionsTab(currentRound);
+}
+
+// ── DESTACADO ─────────────────────────────────────────────────────────────
+function renderDestacado(round) {
+  const el = document.getElementById('destacado-match');
+  if (!el) return;
+
+  const matches = MATCHES[round] || [];
+  const played  = matches.filter(m => m.sh !== null);
+
+  if (!played.length) {
+    // Mostrar el próximo partido sin jugar
+    const next = matches.find(m => m.sh === null);
+    if (!next) {
+      el.innerHTML = `<div class="match-no-data">Sin partidos en esta jornada</div>`;
+      return;
+    }
+    el.innerHTML = buildDestacadoHTML(next, false);
+    return;
+  }
+
+  // Partido con más goles totales
+  const top = played.reduce((a, b) =>
+    (a.sh + a.sa) >= (b.sh + b.sa) ? a : b
+  );
+  el.innerHTML = buildDestacadoHTML(top, true);
+}
+
+function buildDestacadoHTML(m, showScore) {
+  const centerHTML = showScore
+    ? `<div class="match-score-feat">${m.sh} - ${m.sa}</div>
+       <div class="match-total-goals">${m.sh + m.sa} goles totales</div>`
+    : `<div class="match-upcoming-time">${m.hour || '--:--'}</div>
+       <div class="match-upcoming-label">${m.date || 'Próximo'}</div>`;
+
+  return `
+    <div class="team-feat">
+      <img src="https://img.sofascore.com/api/v1/team/${m.homeId}/image"
+           alt="${m.homeName}" onerror="this.style.opacity=0.15">
+      <span>${m.homeName}</span>
+    </div>
+    <div class="match-center">${centerHTML}</div>
+    <div class="team-feat">
+      <img src="https://img.sofascore.com/api/v1/team/${m.awayId}/image"
+           alt="${m.awayName}" onerror="this.style.opacity=0.15">
+      <span>${m.awayName}</span>
+    </div>`;
 }
 
 // ── FAVORITOS ─────────────────────────────────────────────────────────────
 function toggleFav(el) {
   el.classList.toggle('active');
   el.textContent = el.classList.contains('active') ? '★' : '☆';
+}
+
+// ── PROGRESS BAR ─────────────────────────────────────────────────────────
+function updateProgress() {
+  const SEASON_START = new Date('2026-01-30');
+  const SEASON_END   = new Date('2026-11-29');
+  const now          = new Date();
+
+  const total   = SEASON_END - SEASON_START;
+  const elapsed = Math.min(Math.max(now - SEASON_START, 0), total);
+  const pct     = (elapsed / total) * 100;
+
+  const fill = document.querySelector('.progress-fill');
+  if (fill) fill.style.width = `${pct.toFixed(1)}%`;
+
+  const fmt = d => d.toLocaleDateString('es-PE', { day: 'numeric', month: 'short' });
+  const spans = document.querySelectorAll('.progress-dates span');
+  if (spans[0]) spans[0].textContent = fmt(SEASON_START);
+  if (spans[1]) spans[1].textContent = fmt(SEASON_END);
 }
 
 // ── COUNTDOWN ─────────────────────────────────────────────────────────────
@@ -570,6 +638,7 @@ function setupRoundNav() {
   $roundSelect().addEventListener('change', (e) => {
     currentRound = parseInt(e.target.value);
     renderMatches(currentRound);
+    renderDestacado(currentRound);
     if (isPredTabActive()) renderPredictionsTab(currentRound);
   });
 }
@@ -587,6 +656,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Load CSV for standings
   loadCSV();
+
+  // Progress bar temporada
+  updateProgress();
 
   // Countdown
   updateCountdown();

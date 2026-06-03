@@ -13,9 +13,11 @@
 
   <!-- ── HEADER ── -->
   <header class="header">
-    <img class="header-logo"
-         src="https://img.sofascore.com/api/v1/unique-tournament/406/image"
-         alt="Liga 1">
+    <div class="header-logo-wrap">
+      <img class="header-logo"
+           src="https://img.sofascore.com/api/v1/unique-tournament/406/image"
+           alt="Liga 1">
+    </div>
     <div class="header-info">
       <h1>Liga 1</h1>
       <div class="meta">
@@ -44,27 +46,8 @@
 
       <!-- Destacado -->
       <div class="destacado">
-        <div class="destacado-title">Destacado</div>
-        <div class="match-feature">
-          <div class="team-feat">
-            <img src="https://img.sofascore.com/api/v1/team/1082002/image" alt="Cajamarca">
-            <span>Cajamarca</span>
-          </div>
-          <div class="match-center">
-            <div class="match-time">13:15</div>
-            <div class="match-day">Mañana</div>
-            <div class="countdown" id="countdown">--:--:--</div>
-          </div>
-          <div class="team-feat">
-            <img src="https://img.sofascore.com/api/v1/team/2311/image" alt="Alianza Lima">
-            <span>Alianza Lima</span>
-          </div>
-        </div>
-        <div class="odds">
-          <div class="odd-btn"><span class="odd-label">1</span><span class="odd-val">5.00</span></div>
-          <div class="odd-btn"><span class="odd-label">X</span><span class="odd-val">3.50</span></div>
-          <div class="odd-btn"><span class="odd-label">2</span><span class="odd-val">1.73</span></div>
-        </div>
+        <div class="destacado-title">DESTACADO</div>
+        <div class="match-feature" id="destacado-match"></div>
       </div>
 
       <!-- Partidos -->

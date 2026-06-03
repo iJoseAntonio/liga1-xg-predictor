@@ -16,7 +16,7 @@
   --yellow:    #f0a500;
   --gray:      #555;
   --radius:    10px;
-  --header-h:  88px;
+  --header-h:  112px;
 }
 
 body {
@@ -40,7 +40,7 @@ img { display: block; }
   height: var(--header-h);
   background: var(--surface);
   border-bottom: 1px solid var(--border);
-  padding: 12px 24px;
+  padding: 12px 32px;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -49,9 +49,23 @@ img { display: block; }
   z-index: 100;
 }
 
+.header-logo-wrap {
+  width: 72px;
+  height: 72px;
+  min-width: 72px;
+  border-radius: 14px;
+  background: var(--surface2);
+  padding: 6px;
+  margin: 0 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
 .header-logo {
-  width: 52px;
-  height: 52px;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
   filter: drop-shadow(0 0 10px rgba(108,99,255,0.35));
   flex-shrink: 0;
@@ -119,6 +133,7 @@ img { display: block; }
 .layout {
   display: grid;
   grid-template-columns: 300px 1fr;
+  padding: 0 32px;
   height: calc(100vh - var(--header-h));
   overflow: hidden;
 }
@@ -176,32 +191,42 @@ img { display: block; }
 
 .match-center { text-align: center; flex-shrink: 0; }
 
-.match-time {
-  font-size: 22px;
-  font-weight: 600;
+.match-score-feat {
+  font-size: 28px;
+  font-weight: 700;
   font-family: 'DM Mono', monospace;
   color: var(--text);
   line-height: 1;
+  letter-spacing: 2px;
 }
-.match-day {
-  font-size: 11px;
+.match-total-goals {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 4px;
+}
+.match-upcoming-time {
+  font-size: 18px;
+  font-weight: 600;
+  font-family: 'DM Mono', monospace;
   color: var(--text2);
-  margin: 3px 0;
+  line-height: 1;
 }
-.countdown {
+.match-upcoming-label {
+  font-size: 10px;
+  color: var(--text3);
+  margin-top: 4px;
+}
+.match-no-data {
   font-size: 11px;
   color: var(--text3);
-  font-family: 'DM Mono', monospace;
-  letter-spacing: 0.5px;
+  padding: 12px 0;
+  text-align: center;
+  width: 100%;
 }
 
-.odds {
-  display: flex;
-  gap: 6px;
-  margin-top: 12px;
-  padding-top: 10px;
-  border-top: 1px solid var(--border);
-}
 .odd-btn {
   flex: 1;
   background: var(--surface3);
@@ -770,7 +795,7 @@ img { display: block; }
 .pred-bottom { display: flex; flex-direction: column; gap: 2px; }
 .pred-bottom.away { align-items: flex-end; }
 .pred-pct {
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 700;
   font-family: 'DM Mono', monospace;
   line-height: 1;
