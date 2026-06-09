@@ -19,7 +19,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-MODEL_PATH = "modelo_xgboost_liga1.pkl"
+MODEL_PATH = "modelo_xgboost_liga1_xG.pkl"
 DATA_PATH  = "bd_liga1.csv"
 
 modelo      = None
@@ -35,14 +35,15 @@ COLS_STATS_CSV = [
     'Faltas', 'Tarjetas amarillas', 'Tarjetas rojas',
 ]
 
-# Features exactas del modelo (ventanas 3+5)
+# Features del modelo xG (17 columnas → 17*2+1 = 35 features)
 COLS_MODELO = [
-    'goles', 'Posesión de pelota', 'Goles esperados (xG)',
-    'Tiros a puerta', 'Disparos al palo', 'Tiros fuera', 'Tiros bloqueados',
-    'Tiros adentro del area', 'Tiros desde fuera del area', 'Fueras de juego',
-    'Saques de banda', 'Pases al ultimo tercio',
-    'Entradas', 'Intercepciones', 'Recuperaciones', 'Despejes',
-    'Corners', 'Faltas', 'Tarjetas amarillas', 'Tarjetas rojas',
+    'goles', 'Posesión de pelota', 'Goles esperados (xG)', 'Tiros totales',
+    'Tiros a puerta',
+    'Tiros adentro del area', 'Tiros desde fuera del area',
+    'Pases al ultimo tercio',
+    'Entradas', 'Intercepciones', 'Recuperaciones',
+    'Corners', 'Faltas',
+    'Tarjetas amarillas', 'Tarjetas rojas',
     'precision_pases', 'precision_tiros'
 ]
 
@@ -175,7 +176,7 @@ def predict_match(
     away: str = Query(..., description="Nombre del equipo visitante"),
 ):
     """
-    Predice el rendimiento ofensivo de ambos equipos usando sus últimos 3 y 5 partidos.
+    Predice si cada equipo alcanzará xG >= 1.5 usando sus últimos 3 y 5 partidos.
     Ejemplo: /predict-match?home=Universitario&away=Alianza Lima
     """
     if modelo is None:
@@ -250,7 +251,7 @@ def match_result(
 ):
     """
     Devuelve el resultado real del partido y si cada equipo cumplió el target
-    del modelo (xG > 1.5 AND Tiros a puerta > 4 AND Goles >= 1).
+    del modelo xG (Goles esperados >= 1.5).
     Ejemplo: /match-result?home=Universitario&away=Sport Huancayo
     """
     if df_historico is None:
@@ -277,7 +278,7 @@ def match_result(
             "goles":         goles,
             "xg":            xg,
             "tiros_puerta":  tiros,
-            "cumple_target": bool(xg > 1.5 and tiros > 4 and goles >= 1),
+            "cumple_target": bool(xg >= 1.5),
         }
 
     return {
@@ -292,7 +293,7 @@ def info_modelo():
     return {
         "total_features": len(FEATURES_FINAL),
         "ventanas":   ["prom_3 (momentum inmediato)", "prom_5 (tendencia reciente)"],
-        "target":     "xG > 1.5 AND Tiros a puerta > 4 AND Goles >= 1",
+        "target":     "Goles esperados (xG) >= 1.5",
         "algoritmo":  "XGBoost con SMOTE + división temporal 80/20",
         "features":   FEATURES_FINAL,
     }

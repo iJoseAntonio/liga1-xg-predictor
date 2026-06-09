@@ -548,13 +548,9 @@ function buildPredCardHTML(m, data, result = null) {
   const hHigh = data.local.alto_rendimiento;
   const aHigh = data.visitante.alto_rendimiento;
 
-  // Verificación con los 3 criterios reales si el partido ya se jugó
-  const hOk = result
-    ? (hHigh === result.local.cumple_target)
-    : finished ? (hHigh === (m.sh >= 1)) : null;
-  const aOk = result
-    ? (aHigh === result.visitante.cumple_target)
-    : finished ? (aHigh === (m.sa >= 1)) : null;
+  // Verificación: el modelo predijo xG >= 1.5 correctamente?
+  const hOk = result ? (hHigh === result.local.cumple_target) : null;
+  const aOk = result ? (aHigh === result.visitante.cumple_target) : null;
 
   const hBadge = hOk !== null
     ? `<span class="pred-check ${hOk ? 'ok' : 'fail'}">${hOk ? '✓' : '✗'}</span>` : '';
@@ -586,7 +582,7 @@ function buildPredCardHTML(m, data, result = null) {
       </div>
       <div class="pred-bottom">
         <span class="pred-pct ${hHigh ? 'p-high' : 'p-low'}">${hp}%</span>
-        <span class="pred-label">${hHigh ? 'Alto rendimiento' : 'Bajo rendimiento'}</span>
+        <span class="pred-label">${hHigh ? 'xG ≥ 1.5' : 'xG < 1.5'}</span>
         ${hReal}
       </div>
     </div>
@@ -605,7 +601,7 @@ function buildPredCardHTML(m, data, result = null) {
       </div>
       <div class="pred-bottom away">
         <span class="pred-pct ${aHigh ? 'p-high' : 'p-low'}">${ap}%</span>
-        <span class="pred-label">${aHigh ? 'Alto rendimiento' : 'Bajo rendimiento'}</span>
+        <span class="pred-label">${aHigh ? 'xG ≥ 1.5' : 'xG < 1.5'}</span>
         ${aReal}
       </div>
     </div>`;

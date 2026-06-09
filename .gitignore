@@ -1,0 +1,9 @@
+# Notebooks
+*.ipynb
+
+# Virtual environment
+env_liga1/
+
+# Python cache
+__pycache__/
+*.pyc
