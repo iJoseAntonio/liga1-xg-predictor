@@ -809,26 +809,26 @@ function renderCompChart(varKey, metricsData) {
     data: { labels, datasets },
     options: {
       responsive: true,
-      maintainAspectRatio: true,
+      maintainAspectRatio: false,
       scales: {
         r: {
           min: 0,
           max: 1,
           ticks: {
             stepSize: 0.2,
-            color: '#555',
+            color: '#ccc',
             font: { size: 9 },
             backdropColor: 'transparent',
           },
-          grid:        { color: '#333' },
-          angleLines:  { color: '#333' },
-          pointLabels: { color: '#aaa', font: { size: 11 } },
+          grid:        { color: 'rgba(255,255,255,0.15)' },
+          angleLines:  { color: 'rgba(255,255,255,0.15)' },
+          pointLabels: { color: '#e0e0e0', font: { size: 11 } },
         },
       },
       plugins: {
         legend: {
           position: 'bottom',
-          labels: { color: '#aaa', font: { size: 11 }, boxWidth: 12, padding: 16 },
+          labels: { color: '#ddd', font: { size: 11 }, boxWidth: 12, padding: 16 },
         },
         tooltip: {
           callbacks: {
@@ -952,19 +952,21 @@ async function renderRendimientoTab() {
               ${metricsData[k].label}
             </button>`).join('')}
         </div>
-        <div class="comp-chart-wrap">
-          <canvas id="comp-radar"></canvas>
-        </div>
-        <div class="comp-table-wrap">
-          <div class="comp-table-head">
-            <span>Modelo</span>
-            <span>Accuracy</span>
-            <span>Precision</span>
-            <span>Recall</span>
-            <span>F1</span>
-            <span>AUC-ROC</span>
+        <div class="comp-content">
+          <div class="comp-chart-wrap">
+            <canvas id="comp-radar"></canvas>
           </div>
-          <div id="comp-table-body"></div>
+          <div class="comp-table-wrap">
+            <div class="comp-table-head">
+              <span>Modelo</span>
+              <span>Accuracy</span>
+              <span>Precision</span>
+              <span>Recall</span>
+              <span>F1</span>
+              <span>AUC-ROC</span>
+            </div>
+            <div id="comp-table-body"></div>
+          </div>
         </div>`;
     } else {
       compHtml = `<div style="padding:40px;color:var(--text3);font-size:13px;text-align:center">

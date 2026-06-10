@@ -1266,13 +1266,22 @@ img { display: block; }
   color: var(--text);
 }
 
+.comp-content {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: start;
+}
+
 .comp-chart-wrap {
-  height: 300px;
+  flex: 3 1 240px;   /* crece 3x más que la tabla; puede encogerse hasta 240px */
+  min-width: 0;      /* evita que el canvas bloquee el reflow al agrandar la ventana */
   position: relative;
-  margin-bottom: 20px;
+  height: 420px;     /* altura fija — no cambia al pasar a columna */
 }
 
 .comp-table-wrap {
+  flex: 2 0 514px;   /* 390px cols fijas + 20px gaps + 24px padding + 80px "Modelo" */
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
@@ -1284,7 +1293,7 @@ img { display: block; }
   gap: 4px;
   padding: 8px 12px;
   font-size: 10px;
-  color: var(--text3);
+  color: var(--text);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   background: var(--surface2);
