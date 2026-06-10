@@ -361,8 +361,9 @@ async function fetchPredictions(round, matches) {
 }
 
 function applyPrediction(round, idx, data) {
-  const hp = data.local.probabilidad;
-  const ap = data.visitante.probabilidad;
+  // Usa xG como indicador principal en el panel de partidos
+  const hp = data.local.xg.probabilidad;
+  const ap = data.visitante.xg.probabilidad;
 
   const elH = document.getElementById(`pred-h-${round}-${idx}`);
   const elA = document.getElementById(`pred-a-${round}-${idx}`);
@@ -543,25 +544,73 @@ async function renderPredictionsTab(round) {
 
 function buildPredCardHTML(m, data, result = null) {
   const finished = m.sh !== null;
-  const hp = data.local.probabilidad;
-  const ap = data.visitante.probabilidad;
-  const hHigh = data.local.alto_rendimiento;
-  const aHigh = data.visitante.alto_rendimiento;
 
-  // Verificación: el modelo predijo xG >= 1.5 correctamente?
-  const hOk = result ? (hHigh === result.local.cumple_target) : null;
-  const aOk = result ? (aHigh === result.visitante.cumple_target) : null;
+  const hXG  = data.local.xg;
+  const hTir = data.local.tiros;
+  const hGol = data.local.goles;
+  const aXG  = data.visitante.xg;
+  const aTir = data.visitante.tiros;
+  const aGol = data.visitante.goles;
 
-  const hBadge = hOk !== null
-    ? `<span class="pred-check ${hOk ? 'ok' : 'fail'}">${hOk ? '✓' : '✗'}</span>` : '';
-  const aBadge = aOk !== null
-    ? `<span class="pred-check ${aOk ? 'ok' : 'fail'}">${aOk ? '✓' : '✗'}</span>` : '';
+  // Verificación ✓/✗ por cada modelo (solo cuando hay resultado real)
+  function chk(predicted, real) {
+    if (real === undefined || real === null) return '';
+    const ok = predicted === real;
+    return `<span class="pred-check ${ok ? 'ok' : 'fail'}">${ok ? '✓' : '✗'}</span>`;
+  }
 
-  // Estadísticas reales (solo si hay datos del backend)
+  const hChecks = result ? [
+    chk(hXG.alto,  result.local.cumple_xg),
+    chk(hTir.alto, result.local.cumple_tiros),
+    chk(hGol.alto, result.local.cumple_goles),
+  ].join('') : '';
+
+  const aChecks = result ? [
+    chk(aXG.alto,  result.visitante.cumple_xg),
+    chk(aTir.alto, result.visitante.cumple_tiros),
+    chk(aGol.alto, result.visitante.cumple_goles),
+  ].join('') : '';
+
+  // 3 barras apiladas
+  const BARS = [
+    { label: 'xG ≥ 1.5',  key: 'xg'    },
+    { label: 'Tiros > 4', key: 'tiros'  },
+    { label: 'Goles ≥ 2', key: 'goles'  },
+  ];
+
+  function barsHome(d) {
+    return BARS.map(b => {
+      const m = d[b.key];
+      return `
+        <div class="pred-bar-row">
+          <span class="pred-bar-label">${b.label}</span>
+          <div class="pred-bar-track">
+            <div class="pred-bar-fill ${m.alto ? 'p-high' : 'p-low'}" style="width:${m.probabilidad}%"></div>
+          </div>
+          <span class="pred-bar-pct">${m.probabilidad}%</span>
+        </div>`;
+    }).join('');
+  }
+
+  function barsAway(d) {
+    return BARS.map(b => {
+      const m = d[b.key];
+      return `
+        <div class="pred-bar-row away">
+          <span class="pred-bar-pct">${m.probabilidad}%</span>
+          <div class="pred-bar-track away">
+            <div class="pred-bar-fill ${m.alto ? 'p-high' : 'p-low'}" style="width:${m.probabilidad}%"></div>
+          </div>
+          <span class="pred-bar-label">${b.label}</span>
+        </div>`;
+    }).join('');
+  }
+
+  // Stats reales del partido
   const hReal = result
-    ? `<div class="pred-real">${result.local.goles}G · xG ${result.local.xg} · ${result.local.tiros_puerta} tiros</div>` : '';
+    ? `<div class="pred-real">xG ${result.local.xg} · ${result.local.tiros_puerta} tiros · ${result.local.goles}G</div>` : '';
   const aReal = result
-    ? `<div class="pred-real">${result.visitante.goles}G · xG ${result.visitante.xg} · ${result.visitante.tiros_puerta} tiros</div>` : '';
+    ? `<div class="pred-real away">xG ${result.visitante.xg} · ${result.visitante.tiros_puerta} tiros · ${result.visitante.goles}G</div>` : '';
 
   const centerHtml = finished
     ? `<div class="pred-scorebox">${m.sh}<span>-</span>${m.sa}</div>
@@ -575,35 +624,23 @@ function buildPredCardHTML(m, data, result = null) {
         <img class="pred-logo" src="https://img.sofascore.com/api/v1/team/${m.homeId}/image"
              alt="${m.homeName}" onerror="this.style.opacity=0.15">
         <span class="pred-name">${m.homeName}</span>
-        ${hBadge}
+        <div class="pred-check-group">${hChecks}</div>
       </div>
-      <div class="pred-bar-wrap">
-        <div class="pred-bar-fill ${hHigh ? 'p-high' : 'p-low'}" style="width:${hp}%"></div>
-      </div>
-      <div class="pred-bottom">
-        <span class="pred-pct ${hHigh ? 'p-high' : 'p-low'}">${hp}%</span>
-        <span class="pred-label">${hHigh ? 'xG ≥ 1.5' : 'xG < 1.5'}</span>
-        ${hReal}
-      </div>
+      <div class="pred-bars-stack">${barsHome(data.local)}</div>
+      ${hReal}
     </div>
 
     <div class="pred-center">${centerHtml}</div>
 
     <div class="pred-team away">
       <div class="pred-team-head away">
-        ${aBadge}
+        <div class="pred-check-group">${aChecks}</div>
         <span class="pred-name">${m.awayName}</span>
         <img class="pred-logo" src="https://img.sofascore.com/api/v1/team/${m.awayId}/image"
              alt="${m.awayName}" onerror="this.style.opacity=0.15">
       </div>
-      <div class="pred-bar-wrap away">
-        <div class="pred-bar-fill ${aHigh ? 'p-high' : 'p-low'}" style="width:${ap}%"></div>
-      </div>
-      <div class="pred-bottom away">
-        <span class="pred-pct ${aHigh ? 'p-high' : 'p-low'}">${ap}%</span>
-        <span class="pred-label">${aHigh ? 'xG ≥ 1.5' : 'xG < 1.5'}</span>
-        ${aReal}
-      </div>
+      <div class="pred-bars-stack">${barsAway(data.visitante)}</div>
+      ${aReal}
     </div>`;
 }
 

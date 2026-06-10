@@ -741,8 +741,8 @@ img { display: block; }
 /* Card */
 .pred-card {
   display: grid;
-  grid-template-columns: 1fr 56px 1fr;
-  gap: 12px;
+  grid-template-columns: 1fr 52px 1fr;
+  gap: 10px;
   padding: 14px 16px;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -851,4 +851,68 @@ img { display: block; }
 }
 .pred-check.ok   { color: var(--green); }
 .pred-check.fail { color: var(--red);   }
+
+/* Grupo de 3 checks */
+.pred-check-group {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* Stack de 3 barras */
+.pred-bars-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+  margin-top: 2px;
+}
+
+.pred-bar-row {
+  display: grid;
+  grid-template-columns: 56px 1fr 32px;
+  align-items: center;
+  gap: 6px;
+}
+.pred-bar-row.away {
+  grid-template-columns: 32px 1fr 56px;
+}
+
+.pred-bar-label {
+  font-size: 9px;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+}
+.pred-bar-row.away .pred-bar-label {
+  text-align: right;
+}
+
+.pred-bar-track {
+  height: 5px;
+  background: var(--surface3);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.pred-bar-track.away {
+  direction: rtl;
+}
+
+.pred-bar-pct {
+  font-size: 10px;
+  font-weight: 600;
+  font-family: 'DM Mono', monospace;
+  color: var(--text);
+  white-space: nowrap;
+}
+.pred-bar-row.away .pred-bar-pct {
+  text-align: left;
+}
+
+/* Stats reales */
+.pred-real.away {
+  text-align: right;
+}
 
