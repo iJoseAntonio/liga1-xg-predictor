@@ -34,6 +34,12 @@ const TEAM_IDS = {
   'Atletico Grau':      282538,
   'Sport Huancayo':     33895,
   'ADC Juan Pablo II':  511206,
+  'CD Juan Pablo II':   511206,   // alias: nombre en tabla_liga1_peru.csv
+};
+
+// Normaliza nombres inconsistentes entre CSVs
+const TEAM_NAME_MAP = {
+  'CD Juan Pablo II': 'ADC Juan Pablo II',
 };
 
 // Zonas de la tabla (posiciones)
@@ -129,7 +135,7 @@ function loadMatchesCSV() {
         let prevDate = null;
         MATCHES[roundNum] = grouped[r].map(row => {
           const rawDate  = (row['fecha'] || '').trim();
-          const display  = rawDate && rawDate !== prevDate ? formatMatchDate(rawDate) : '';
+          const display  = rawDate ? formatMatchDate(rawDate) : '';
           if (rawDate) prevDate = rawDate;
 
           const homeName  = (row['equipo_local']    || '').trim();
@@ -199,8 +205,9 @@ function renderStandings(data) {
   let html = '';
 
   data.forEach((row, i) => {
-    const pos  = parseInt(row['Posicion'] || row['posicion'] || i + 1);
-    const name = (row['Equipo'] || '').trim();
+    const pos     = parseInt(row['Posicion'] || row['posicion'] || i + 1);
+    const rawName = (row['Equipo'] || '').trim();
+    const name    = TEAM_NAME_MAP[rawName] || rawName;
     const teamId = getTeamId(name);
     const logo   = teamId
       ? `https://img.sofascore.com/api/v1/team/${teamId}/image`
