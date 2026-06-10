@@ -4,6 +4,7 @@ import joblib
 import pandas as pd
 import numpy as np
 import os
+import re
 
 app = FastAPI(
     title="Liga 1 Perú — Predictor Multi-Modelo",
@@ -150,6 +151,33 @@ def run_model(modelo, stats: dict, feature_list: list) -> tuple[float, int]:
     return round(prob * 100, 1), clase
 
 
+def _load_date_round_map() -> dict:
+    """Carga partidos_liga1_2026.csv y devuelve {fecha_normalizada: nº_ronda_apertura}."""
+    path = "partidos_liga1_2026.csv"
+    if not os.path.exists(path):
+        return {}
+    try:
+        df_p = pd.read_csv(path, sep=';', encoding='utf-8-sig')
+        df_p.columns = df_p.columns.str.strip()
+        mapping = {}
+        for _, row in df_p.iterrows():
+            jornada = str(row.get('Jornada', '')).strip()
+            m = re.search(r'(\d+)', jornada)
+            if not m:
+                continue
+            rnd = int(m.group(1))
+            fecha = pd.to_datetime(
+                str(row.get('fecha', '')).strip(), format='%d/%m/%Y', errors='coerce'
+            )
+            if pd.notna(fecha):
+                mapping[fecha.normalize()] = rnd
+        print(f"Round map cargado: {len(set(mapping.values()))} jornadas.")
+        return mapping
+    except Exception as e:
+        print(f"Error cargando round map: {e}")
+        return {}
+
+
 def _compute_stats_df(team_name: str, is_local: int, df_sub: pd.DataFrame) -> dict | None:
     """Como compute_team_stats pero recibe un DataFrame filtrado (para backtesting)."""
     rows = []
@@ -183,7 +211,7 @@ def _compute_stats_df(team_name: str, is_local: int, df_sub: pd.DataFrame) -> di
 
 
 def _precompute_performance():
-    """Backtesting: predice cada partido post-corte usando solo datos anteriores a él."""
+    """Backtesting: predice cada partido post-corte con datos estrictamente anteriores."""
     global _perf_by_round
     if df_historico is None or any(m is None for m in [modelo_xg, modelo_tiros, modelo_goles]):
         return
@@ -194,11 +222,16 @@ def _precompute_performance():
         print("Rendimiento: sin datos post-corte disponibles.")
         return
 
+    date_round = _load_date_round_map()   # fecha → nº jornada apertura real
+
     records = []
     for _, match in post.iterrows():
         prior = df_historico[df_historico['fecha'] < match['fecha']]
+        fecha_norm = match['fecha'].normalize()
+        rnd_num = date_round.get(fecha_norm)   # None si no está en el CSV
+
         for team, is_local, sfx in [
-            (match.get('equipo_local'),    1, '_local'),
+            (match.get('equipo_local'),     1, '_local'),
             (match.get('equipo_visitante'), 0, '_visitante'),
         ]:
             if not team:
@@ -223,31 +256,35 @@ def _precompute_performance():
 
             records.append({
                 'fecha':    match['fecha'],
+                'rnd':      rnd_num,
                 'xg_ok':   (xg_c  == 1) == (real_xg    >= 1.5),
                 'tiros_ok':(tir_c == 1) == (real_tiros  >  4),
                 'goles_ok':(gol_c == 1) == (real_goles  >= 2),
             })
 
     if not records:
-        print("Rendimiento: no se pudieron generar predicciones de backtesting.")
+        print("Rendimiento: no se pudieron generar predicciones.")
         return
 
     df_r = pd.DataFrame(records).sort_values('fecha')
-    dates = sorted(df_r['fecha'].unique())
-    round_map = {}
-    rnd, grp = 1, [dates[0]]
-    for i in range(1, len(dates)):
-        if (dates[i] - dates[i - 1]).days <= 4:
-            grp.append(dates[i])
-        else:
-            for d in grp:
-                round_map[d] = rnd
-            rnd += 1
-            grp = [dates[i]]
-    for d in grp:
-        round_map[d] = rnd
 
-    df_r['rnd'] = df_r['fecha'].map(round_map)
+    # Si el CSV de partidos tiene round numbers úsalos; sino fallback por proximidad
+    if date_round and df_r['rnd'].notna().any():
+        df_r = df_r[df_r['rnd'].notna()].copy()
+        df_r['rnd'] = df_r['rnd'].astype(int)
+    else:
+        # Fallback: agrupar fechas cercanas, empezar en ronda 13
+        dates = sorted(df_r['fecha'].unique())
+        rmap, rnd, grp = {}, 13, [dates[0]]
+        for i in range(1, len(dates)):
+            if (dates[i] - dates[i - 1]).days <= 4:
+                grp.append(dates[i])
+            else:
+                for d in grp: rmap[d] = rnd
+                rnd += 1; grp = [dates[i]]
+        for d in grp: rmap[d] = rnd
+        df_r['rnd'] = df_r['fecha'].map(rmap)
+
     rounds_out = []
     for r, g in df_r.groupby('rnd'):
         rounds_out.append({
@@ -393,8 +430,10 @@ def team_rankings():
     if df_historico is None:
         raise HTTPException(status_code=503, detail="Datos no disponibles")
 
+    df_2026 = df_historico[df_historico['fecha'].dt.year == 2026]
+
     teams: dict = {}
-    for _, row in df_historico.iterrows():
+    for _, row in df_2026.iterrows():
         for team, sfx in [
             (row.get('equipo_local'),    '_local'),
             (row.get('equipo_visitante'), '_visitante'),

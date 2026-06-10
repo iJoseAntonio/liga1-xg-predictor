@@ -681,25 +681,28 @@ async function renderEstadisticasTab() {
 
     const maxXG    = Math.max(...data.map(t => t.xg_avg));
     const maxTiros = Math.max(...data.map(t => t.tiros_avg));
+    const maxGoles = Math.max(...data.map(t => t.goles_avg));
 
     let html = `
       <div class="stats-table-head">
         <span>#</span>
         <span>Equipo</span>
         <span style="text-align:center">PJ</span>
-        <span>xG prom</span>
+        <span>xG prom ↓</span>
         <span>Tiros prom</span>
-        <span style="text-align:center">Goles</span>
+        <span>Goles prom</span>
         <span style="text-align:center">Posesión</span>
       </div>`;
 
     data.forEach((team, i) => {
       const id   = getTeamId(team.equipo);
       const logo = id ? `https://img.sofascore.com/api/v1/team/${id}/image` : '';
-      const xgW  = ((team.xg_avg    / maxXG)   * 100).toFixed(0);
-      const tirW = ((team.tiros_avg / maxTiros) * 100).toFixed(0);
-      const xgHi = team.xg_avg    >= 1.5;
+      const xgW   = ((team.xg_avg    / maxXG)    * 100).toFixed(0);
+      const tirW  = ((team.tiros_avg / maxTiros)  * 100).toFixed(0);
+      const golW  = ((team.goles_avg / maxGoles)  * 100).toFixed(0);
+      const xgHi  = team.xg_avg    >= 1.5;
       const tirHi = team.tiros_avg >  4;
+      const golHi = team.goles_avg >= 2;
 
       html += `
         <div class="stats-row" style="animation-delay:${i * 0.03}s">
@@ -729,7 +732,15 @@ async function renderEstadisticasTab() {
               <div class="stats-mini-bar-fill tiros-bar" style="width:${tirW}%"></div>
             </div>
           </div>
-          <span class="stats-num-cell">${team.goles_avg}</span>
+          <div class="stats-bar-cell">
+            <div class="stats-bar-header">
+              <span class="stats-val${golHi ? ' stat-hi' : ''}">${team.goles_avg}</span>
+              ${golHi ? '<span class="stats-hi-dot">●</span>' : ''}
+            </div>
+            <div class="stats-mini-bar-track">
+              <div class="stats-mini-bar-fill goles-bar" style="width:${golW}%"></div>
+            </div>
+          </div>
           <span class="stats-num-cell">${team.posesion_avg}%</span>
         </div>`;
     });
