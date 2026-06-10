@@ -426,10 +426,25 @@ def info_modelo():
 
 @app.get("/team-rankings")
 def team_rankings():
-    """Ranking ofensivo de equipos: xG, tiros y goles promedio por partido."""
+    """Ranking ofensivo de equipos: xG, tiros y goles promedio por partido (solo 2026)."""
     if df_historico is None:
         raise HTTPException(status_code=503, detail="Datos no disponibles")
 
+    # Whitelist de equipos que juegan en Liga 1 2026
+    valid_teams: set = set()
+    partidos_path = "partidos_liga1_2026.csv"
+    if os.path.exists(partidos_path):
+        try:
+            df_p = pd.read_csv(partidos_path, sep=';', encoding='utf-8-sig')
+            df_p.columns = df_p.columns.str.strip()
+            valid_teams = (
+                set(df_p['equipo_local'].str.strip().dropna()) |
+                set(df_p['equipo_visitante'].str.strip().dropna())
+            )
+        except Exception as e:
+            print(f"team-rankings: error cargando partidos CSV: {e}")
+
+    # Solo partidos de 2026
     df_2026 = df_historico[df_historico['fecha'].dt.year == 2026]
 
     teams: dict = {}
@@ -439,6 +454,9 @@ def team_rankings():
             (row.get('equipo_visitante'), '_visitante'),
         ]:
             if not team:
+                continue
+            # Excluir equipos que no están en el torneo 2026
+            if valid_teams and team not in valid_teams:
                 continue
             if team not in teams:
                 teams[team] = {'xg': [], 'tiros': [], 'goles': [], 'posesion': []}

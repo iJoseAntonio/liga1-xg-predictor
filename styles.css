@@ -940,7 +940,7 @@ img { display: block; }
 
 .stats-table-head {
   display: grid;
-  grid-template-columns: 28px 1fr 40px 120px 110px 110px 58px;
+  grid-template-columns: 28px 1fr 36px 110px 100px 100px 95px;
   gap: 6px;
   padding: 6px 8px;
   font-size: 10px;
@@ -957,7 +957,7 @@ img { display: block; }
 
 .stats-row {
   display: grid;
-  grid-template-columns: 28px 1fr 40px 120px 110px 110px 58px;
+  grid-template-columns: 28px 1fr 36px 110px 100px 100px 95px;
   gap: 6px;
   padding: 8px 8px;
   align-items: center;
@@ -1038,9 +1038,10 @@ img { display: block; }
   border-radius: 2px;
   transition: width 0.7s ease;
 }
-.xg-bar    { background: var(--accent); }
-.tiros-bar { background: var(--yellow); }
-.goles-bar { background: var(--green);  }
+.xg-bar      { background: var(--accent); }
+.tiros-bar   { background: var(--yellow); }
+.goles-bar   { background: var(--green);  }
+.posesion-bar{ background: #38bdf8; }
 
 /* ── RENDIMIENTO TAB ──────────────────────────────────────────────────────── */
 .rend-tab-wrap {
