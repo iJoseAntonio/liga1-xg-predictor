@@ -23,10 +23,11 @@ MODEL_TIROS_PATH = "modelo_xgboost_liga1_tiros_puerta.pkl"
 MODEL_GOLES_PATH = "modelo_xgboost_liga_goles.pkl"
 DATA_PATH        = "bd_liga1.csv"
 
-modelo_xg    = None
-modelo_tiros = None
-modelo_goles = None
-df_historico = None
+modelo_xg      = None
+modelo_tiros   = None
+modelo_goles   = None
+df_historico   = None
+_perf_by_round = []   # precomputado al inicio: accuracy por ronda post-corte
 
 # Columnas raw a extraer del CSV (superset de los 3 modelos)
 COLS_STATS_CSV = [
@@ -96,6 +97,8 @@ def cargar_recursos():
     else:
         print(f"ADVERTENCIA: {DATA_PATH} no encontrado.")
 
+    _precompute_performance()
+
 
 def compute_team_stats(team_name: str, is_local: int) -> dict | None:
     """Calcula rolling features (últimos 3 y 5 partidos) para los 3 modelos."""
@@ -145,6 +148,119 @@ def run_model(modelo, stats: dict, feature_list: list) -> tuple[float, int]:
     prob  = float(modelo.predict_proba(X)[0][1])
     clase = int(modelo.predict(X)[0])
     return round(prob * 100, 1), clase
+
+
+def _compute_stats_df(team_name: str, is_local: int, df_sub: pd.DataFrame) -> dict | None:
+    """Como compute_team_stats pero recibe un DataFrame filtrado (para backtesting)."""
+    rows = []
+    for _, m in df_sub.iterrows():
+        if m.get('equipo_local') == team_name:
+            suffix = '_local'
+        elif m.get('equipo_visitante') == team_name:
+            suffix = '_visitante'
+        else:
+            continue
+        row = {}
+        for col in COLS_STATS_CSV:
+            val = m.get(f'{col}{suffix}', 0)
+            row[col] = pd.to_numeric(val, errors='coerce') or 0.0
+        rows.append(row)
+    if not rows:
+        return None
+    df_t = pd.DataFrame(rows)
+    df_t['precision_pases'] = (
+        df_t['Pases precisos'] / df_t['Pases'].replace(0, np.nan)
+    ).fillna(0)
+    df_t['precision_tiros'] = (
+        df_t['Tiros a puerta'] / df_t['Tiros totales'].replace(0, np.nan)
+    ).fillna(0)
+    all_cols = list(dict.fromkeys(COLS_XG + COLS_TIROS))
+    features = {'Local': is_local}
+    for col in all_cols:
+        features[f'{col}_prom_3'] = float(df_t[col].tail(3).mean())
+        features[f'{col}_prom_5'] = float(df_t[col].tail(5).mean())
+    return features
+
+
+def _precompute_performance():
+    """Backtesting: predice cada partido post-corte usando solo datos anteriores a él."""
+    global _perf_by_round
+    if df_historico is None or any(m is None for m in [modelo_xg, modelo_tiros, modelo_goles]):
+        return
+
+    CUTOFF = pd.Timestamp('2026-04-27')
+    post = df_historico[df_historico['fecha'] > CUTOFF].copy().sort_values('fecha')
+    if post.empty:
+        print("Rendimiento: sin datos post-corte disponibles.")
+        return
+
+    records = []
+    for _, match in post.iterrows():
+        prior = df_historico[df_historico['fecha'] < match['fecha']]
+        for team, is_local, sfx in [
+            (match.get('equipo_local'),    1, '_local'),
+            (match.get('equipo_visitante'), 0, '_visitante'),
+        ]:
+            if not team:
+                continue
+            stats = _compute_stats_df(team, is_local, prior)
+            if stats is None:
+                continue
+            try:
+                _, xg_c  = run_model(modelo_xg,   stats, FEATURES_XG)
+                _, tir_c = run_model(modelo_tiros, stats, FEATURES_TIROS)
+                _, gol_c = run_model(modelo_goles, stats, FEATURES_GOLES)
+            except Exception as e:
+                print(f"Rendimiento error {team}: {e}")
+                continue
+
+            def nv(col, s=sfx, r=match):
+                return pd.to_numeric(r.get(f'{col}{s}', 0), errors='coerce') or 0.0
+
+            real_xg    = float(nv('Goles esperados (xG)'))
+            real_tiros = int(nv('Tiros a puerta'))
+            real_goles = int(nv('goles'))
+
+            records.append({
+                'fecha':    match['fecha'],
+                'xg_ok':   (xg_c  == 1) == (real_xg    >= 1.5),
+                'tiros_ok':(tir_c == 1) == (real_tiros  >  4),
+                'goles_ok':(gol_c == 1) == (real_goles  >= 2),
+            })
+
+    if not records:
+        print("Rendimiento: no se pudieron generar predicciones de backtesting.")
+        return
+
+    df_r = pd.DataFrame(records).sort_values('fecha')
+    dates = sorted(df_r['fecha'].unique())
+    round_map = {}
+    rnd, grp = 1, [dates[0]]
+    for i in range(1, len(dates)):
+        if (dates[i] - dates[i - 1]).days <= 4:
+            grp.append(dates[i])
+        else:
+            for d in grp:
+                round_map[d] = rnd
+            rnd += 1
+            grp = [dates[i]]
+    for d in grp:
+        round_map[d] = rnd
+
+    df_r['rnd'] = df_r['fecha'].map(round_map)
+    rounds_out = []
+    for r, g in df_r.groupby('rnd'):
+        rounds_out.append({
+            'jornada':   int(r),
+            'fecha':     g['fecha'].min().strftime('%d/%m/%Y'),
+            'total':     len(g),
+            'xg_pct':    round(float(g['xg_ok'].mean())    * 100, 1),
+            'tiros_pct': round(float(g['tiros_ok'].mean()) * 100, 1),
+            'goles_pct': round(float(g['goles_ok'].mean()) * 100, 1),
+        })
+
+    _perf_by_round = rounds_out
+    print(f"Rendimiento precomputado: {len(rounds_out)} rondas, {len(records)} predicciones.")
 
 
 @app.get("/")
@@ -268,4 +384,73 @@ def info_modelo():
         },
         "ventanas":  ["prom_3 (momentum inmediato)", "prom_5 (tendencia reciente)"],
         "algoritmo": "XGBoost + SMOTE + división temporal 80/20",
+    }
+
+
+@app.get("/team-rankings")
+def team_rankings():
+    """Ranking ofensivo de equipos: xG, tiros y goles promedio por partido."""
+    if df_historico is None:
+        raise HTTPException(status_code=503, detail="Datos no disponibles")
+
+    teams: dict = {}
+    for _, row in df_historico.iterrows():
+        for team, sfx in [
+            (row.get('equipo_local'),    '_local'),
+            (row.get('equipo_visitante'), '_visitante'),
+        ]:
+            if not team:
+                continue
+            if team not in teams:
+                teams[team] = {'xg': [], 'tiros': [], 'goles': [], 'posesion': []}
+
+            def nv(col, s=sfx, r=row):
+                return pd.to_numeric(r.get(f'{col}{s}', 0), errors='coerce') or 0.0
+
+            xg  = nv('Goles esperados (xG)')
+            tir = nv('Tiros a puerta')
+            gol = nv('goles')
+            pos = nv('Posesión de pelota')
+            if xg > 0 or tir > 0:
+                teams[team]['xg'].append(xg)
+                teams[team]['tiros'].append(tir)
+                teams[team]['goles'].append(gol)
+                teams[team]['posesion'].append(pos)
+
+    result = [
+        {
+            'equipo':       t,
+            'partidos':     len(s['xg']),
+            'xg_avg':       round(float(np.mean(s['xg'])),      2),
+            'tiros_avg':    round(float(np.mean(s['tiros'])),    1),
+            'goles_avg':    round(float(np.mean(s['goles'])),    2),
+            'posesion_avg': round(float(np.mean(s['posesion'])), 1),
+        }
+        for t, s in teams.items()
+        if s['xg']
+    ]
+    result.sort(key=lambda x: x['xg_avg'], reverse=True)
+    return result
+
+
+@app.get("/model-performance")
+def model_performance():
+    """Accuracy de los 3 modelos por jornada (backtesting post-corte)."""
+    if not _perf_by_round:
+        return {
+            "resumen": None,
+            "rounds":  [],
+            "message": "Sin datos post-entrenamiento. Modelos entrenados hasta 27/04/2026.",
+        }
+    xg_avg    = round(float(np.mean([r['xg_pct']    for r in _perf_by_round])), 1)
+    tiros_avg = round(float(np.mean([r['tiros_pct'] for r in _perf_by_round])), 1)
+    goles_avg = round(float(np.mean([r['goles_pct'] for r in _perf_by_round])), 1)
+    return {
+        "resumen": {
+            "xg_accuracy":    xg_avg,
+            "tiros_accuracy": tiros_avg,
+            "goles_accuracy": goles_avg,
+            "total_rondas":   len(_perf_by_round),
+        },
+        "rounds": _perf_by_round,
     }

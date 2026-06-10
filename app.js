@@ -49,6 +49,8 @@ let ROUND_MAX     = 17;
 const ROUND_MIN   = 1;
 let standingsData = [];
 const predCache   = {};   // { "HomeTeam|AwayTeam": { local:{...}, visitante:{...} } }
+let _statsLoaded  = false;
+let _rendLoaded   = false;
 
 // ── DOM REFS ─────────────────────────────────────────────────────────────
 const $standingsTable = () => document.getElementById('standings-table');
@@ -495,7 +497,10 @@ function setupMainTabs() {
       tab.classList.add('active');
       const target = document.getElementById(`tab-${tab.dataset.tab}`);
       if (target) target.classList.add('active');
-      if (tab.dataset.tab === 'predicciones') renderPredictionsTab(currentRound);
+      const name = tab.dataset.tab;
+      if (name === 'predicciones') renderPredictionsTab(currentRound);
+      if (name === 'estadisticas' && !_statsLoaded) { renderEstadisticasTab(); _statsLoaded = true; }
+      if (name === 'rendimiento'  && !_rendLoaded)  { renderRendimientoTab();  _rendLoaded  = true; }
     });
   });
 }
@@ -642,6 +647,182 @@ function buildPredCardHTML(m, data, result = null) {
       <div class="pred-bars-stack">${barsAway(data.visitante)}</div>
       ${aReal}
     </div>`;
+}
+
+// ── ESTADÍSTICAS TAB ──────────────────────────────────────────────────────
+async function renderEstadisticasTab() {
+  const tabEl = document.getElementById('tab-estadisticas');
+  if (!tabEl) return;
+
+  tabEl.innerHTML = `
+    <div class="stats-tab-wrap">
+      <div class="stats-tab-header">
+        <span class="pred-tab-title">Estadísticas ofensivas</span>
+        <span class="pred-tab-sub">Promedios por partido — Apertura 2026</span>
+      </div>
+      <div class="stats-table-wrap">
+        <div id="stats-table-content">
+          <div class="loading-state"><div class="spinner"></div><span>Cargando ranking...</span></div>
+        </div>
+      </div>
+    </div>`;
+
+  const content = document.getElementById('stats-table-content');
+
+  try {
+    const res = await fetch(`${API_URL}/team-rankings`);
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+
+    if (!data.length) {
+      content.innerHTML = '<div class="empty-tab">Sin datos disponibles</div>';
+      return;
+    }
+
+    const maxXG    = Math.max(...data.map(t => t.xg_avg));
+    const maxTiros = Math.max(...data.map(t => t.tiros_avg));
+
+    let html = `
+      <div class="stats-table-head">
+        <span>#</span>
+        <span>Equipo</span>
+        <span style="text-align:center">PJ</span>
+        <span>xG prom</span>
+        <span>Tiros prom</span>
+        <span style="text-align:center">Goles</span>
+        <span style="text-align:center">Posesión</span>
+      </div>`;
+
+    data.forEach((team, i) => {
+      const id   = getTeamId(team.equipo);
+      const logo = id ? `https://img.sofascore.com/api/v1/team/${id}/image` : '';
+      const xgW  = ((team.xg_avg    / maxXG)   * 100).toFixed(0);
+      const tirW = ((team.tiros_avg / maxTiros) * 100).toFixed(0);
+      const xgHi = team.xg_avg    >= 1.5;
+      const tirHi = team.tiros_avg >  4;
+
+      html += `
+        <div class="stats-row" style="animation-delay:${i * 0.03}s">
+          <span class="stats-rank">${i + 1}</span>
+          <div class="stats-team-cell">
+            ${logo
+              ? `<img src="${logo}" alt="${team.equipo}" onerror="this.style.opacity=0.15">`
+              : '<div style="width:22px;flex-shrink:0"></div>'}
+            <span>${team.equipo}</span>
+          </div>
+          <span class="stats-num-cell">${team.partidos}</span>
+          <div class="stats-bar-cell">
+            <div class="stats-bar-header">
+              <span class="stats-val${xgHi ? ' stat-hi' : ''}">${team.xg_avg}</span>
+              ${xgHi ? '<span class="stats-hi-dot">●</span>' : ''}
+            </div>
+            <div class="stats-mini-bar-track">
+              <div class="stats-mini-bar-fill xg-bar" style="width:${xgW}%"></div>
+            </div>
+          </div>
+          <div class="stats-bar-cell">
+            <div class="stats-bar-header">
+              <span class="stats-val${tirHi ? ' stat-hi' : ''}">${team.tiros_avg}</span>
+              ${tirHi ? '<span class="stats-hi-dot">●</span>' : ''}
+            </div>
+            <div class="stats-mini-bar-track">
+              <div class="stats-mini-bar-fill tiros-bar" style="width:${tirW}%"></div>
+            </div>
+          </div>
+          <span class="stats-num-cell">${team.goles_avg}</span>
+          <span class="stats-num-cell">${team.posesion_avg}%</span>
+        </div>`;
+    });
+
+    content.innerHTML = html;
+  } catch (_) {
+    content.innerHTML = '<div class="empty-tab">No se pudo cargar las estadísticas</div>';
+  }
+}
+
+// ── RENDIMIENTO TAB ────────────────────────────────────────────────────────
+async function renderRendimientoTab() {
+  const tabEl = document.getElementById('tab-rendimiento');
+  if (!tabEl) return;
+
+  tabEl.innerHTML = `
+    <div class="rend-tab-wrap">
+      <div class="rend-tab-header">
+        <span class="pred-tab-title">Rendimiento del modelo</span>
+        <span class="pred-tab-sub">Accuracy por jornada — backtesting post-corte</span>
+      </div>
+      <div id="rend-tab-content">
+        <div class="loading-state"><div class="spinner"></div><span>Calculando accuracy...</span></div>
+      </div>
+    </div>`;
+
+  const content = document.getElementById('rend-tab-content');
+
+  try {
+    const res = await fetch(`${API_URL}/model-performance`);
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+
+    if (!data.rounds || !data.rounds.length) {
+      content.innerHTML = `<div style="padding:24px 16px;color:var(--text3);font-size:13px">
+        Sin datos post-entrenamiento. Modelos entrenados hasta el 27/04/2026.</div>`;
+      return;
+    }
+
+    const { resumen, rounds } = data;
+
+    function accColor(pct) {
+      return pct >= 70 ? 'acc-green' : pct >= 50 ? 'acc-yellow' : 'acc-red';
+    }
+
+    const totalPred = rounds.reduce((s, r) => s + r.total, 0);
+
+    let html = `
+      <div class="acc-summary">
+        <div class="acc-card">
+          <span class="acc-card-label">xG ≥ 1.5</span>
+          <span class="acc-card-value ${accColor(resumen.xg_accuracy)}">${resumen.xg_accuracy}%</span>
+          <span class="acc-card-sub">Accuracy global</span>
+        </div>
+        <div class="acc-card">
+          <span class="acc-card-label">Tiros &gt; 4</span>
+          <span class="acc-card-value ${accColor(resumen.tiros_accuracy)}">${resumen.tiros_accuracy}%</span>
+          <span class="acc-card-sub">Accuracy global</span>
+        </div>
+        <div class="acc-card">
+          <span class="acc-card-label">Goles ≥ 2</span>
+          <span class="acc-card-value ${accColor(resumen.goles_accuracy)}">${resumen.goles_accuracy}%</span>
+          <span class="acc-card-sub">Accuracy global</span>
+        </div>
+      </div>
+      <div class="rend-meta">${resumen.total_rondas} jornadas evaluadas · ${totalPred} predicciones</div>
+      <div class="rend-table-wrap">
+        <div class="rend-table-head">
+          <span>Ronda</span>
+          <span>Semana del</span>
+          <span style="text-align:center">n</span>
+          <span>xG ≥ 1.5</span>
+          <span>Tiros &gt; 4</span>
+          <span>Goles ≥ 2</span>
+        </div>`;
+
+    rounds.forEach((r, i) => {
+      html += `
+        <div class="rend-table-row" style="animation-delay:${i * 0.05}s">
+          <span class="rend-jornada">${r.jornada}</span>
+          <span class="rend-fecha">${r.fecha}</span>
+          <span class="rend-n">${r.total}</span>
+          <span class="acc-badge ${accColor(r.xg_pct)}">${r.xg_pct}%</span>
+          <span class="acc-badge ${accColor(r.tiros_pct)}">${r.tiros_pct}%</span>
+          <span class="acc-badge ${accColor(r.goles_pct)}">${r.goles_pct}%</span>
+        </div>`;
+    });
+
+    html += `</div>`;
+    content.innerHTML = html;
+  } catch (_) {
+    content.innerHTML = '<div class="empty-tab">No se pudo cargar el rendimiento del modelo</div>';
+  }
 }
 
 function setupSubTabs() {
