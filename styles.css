@@ -725,7 +725,7 @@ img { display: block; }
 }
 .pred-tab-sub {
   font-size: 11px;
-  color: var(--text3);
+  color: var(--text2);
 }
 
 #pred-tab-content {
@@ -1108,7 +1108,7 @@ img { display: block; }
 
 .acc-card-sub {
   font-size: 9px;
-  color: var(--text3);
+  color: var(--text2);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -1116,14 +1116,18 @@ img { display: block; }
 .rend-meta {
   padding: 0 16px 10px;
   font-size: 11px;
-  color: var(--text3);
+  color: var(--text2);
   flex-shrink: 0;
 }
 
-.rend-table-wrap {
+#rend-tab-content {
   flex: 1;
   overflow-y: auto;
-  padding: 0 16px 24px;
+  min-height: 0;
+}
+
+.rend-table-wrap {
+  padding: 0 16px 12px;
 }
 
 .rend-table-head {
@@ -1132,7 +1136,7 @@ img { display: block; }
   gap: 8px;
   padding: 6px 8px;
   font-size: 10px;
-  color: var(--text3);
+  color: var(--text2);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   border-bottom: 1px solid var(--border);
@@ -1164,13 +1168,13 @@ img { display: block; }
 
 .rend-fecha {
   font-size: 11px;
-  color: var(--text3);
+  color: var(--text2);
   font-family: 'DM Mono', monospace;
 }
 
 .rend-n {
   font-size: 11px;
-  color: var(--text3);
+  color: var(--text2);
   font-family: 'DM Mono', monospace;
   text-align: center;
 }
@@ -1189,4 +1193,124 @@ img { display: block; }
 .acc-badge.acc-green  { background: rgba(21, 177, 104, 0.15); color: var(--green); }
 .acc-badge.acc-yellow { background: rgba(240, 165, 0, 0.15);  color: var(--yellow); }
 .acc-badge.acc-red    { background: rgba(226, 75, 74, 0.12);  color: var(--red); }
+
+/* ── RENDIMIENTO SUB-TABS ────────────────────────────────────────────────── */
+.rend-sub-nav {
+  display: flex;
+  padding: 10px 16px 8px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.rend-sub-tabs {
+  background: var(--surface3);
+  border-radius: 20px;
+  padding: 3px;
+  display: flex;
+  gap: 2px;
+}
+
+.rend-sub-tab {
+  padding: 5px 20px;
+  border: none;
+  border-radius: 16px;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 500;
+  transition: all 0.2s;
+  background: transparent;
+  color: var(--text2);
+}
+.rend-sub-tab.active {
+  background: var(--surface);
+  color: var(--text);
+}
+
+/* ── COMPARACIÓN DE ALGORITMOS ───────────────────────────────────────────── */
+.comp-section {
+  padding: 0 16px 28px;
+}
+
+.comp-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 16px 0 12px;
+}
+
+.comp-var-tabs {
+  display: flex;
+  background: var(--surface3);
+  border-radius: 20px;
+  padding: 3px;
+  gap: 2px;
+  width: fit-content;
+  margin-bottom: 18px;
+}
+
+.comp-var-tab {
+  padding: 5px 16px;
+  border: none;
+  border-radius: 16px;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 500;
+  transition: all 0.2s;
+  background: transparent;
+  color: var(--text2);
+}
+.comp-var-tab.active {
+  background: var(--surface);
+  color: var(--text);
+}
+
+.comp-chart-wrap {
+  height: 300px;
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.comp-table-wrap {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.comp-table-head {
+  display: grid;
+  grid-template-columns: 1fr 80px 80px 80px 70px 80px;
+  gap: 4px;
+  padding: 8px 12px;
+  font-size: 10px;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  align-items: center;
+}
+
+.comp-table-row {
+  display: grid;
+  grid-template-columns: 1fr 80px 80px 80px 70px 80px;
+  gap: 4px;
+  padding: 10px 12px;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  font-family: 'DM Mono', monospace;
+  color: var(--text2);
+  transition: background 0.15s;
+  animation: fadeIn 0.2s ease both;
+}
+.comp-table-row:last-child { border-bottom: none; }
+.comp-table-row:hover { background: var(--surface3); }
+
+.comp-model-name {
+  font-size: 12px;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+}
 

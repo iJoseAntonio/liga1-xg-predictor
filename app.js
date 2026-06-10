@@ -586,7 +586,7 @@ function buildPredCardHTML(m, data, result = null) {
   // 3 barras apiladas
   const BARS = [
     { label: 'xG ≥ 1.5',  key: 'xg'    },
-    { label: 'Tiros > 4', key: 'tiros'  },
+    { label: 'Tiros ≥ 5', key: 'tiros'  },
     { label: 'Goles ≥ 2', key: 'goles'  },
   ];
 
@@ -710,7 +710,7 @@ async function renderEstadisticasTab() {
       const golW  = ((team.goles_avg   / maxGoles)  * 100).toFixed(0);
       const posW  = ((team.posesion_avg / maxPos)   * 100).toFixed(0);
       const xgHi  = team.xg_avg    >= 1.5;
-      const tirHi = team.tiros_avg >  4;
+      const tirHi = team.tiros_avg >= 5;
       const golHi = team.goles_avg >= 2;
 
       html += `
@@ -767,6 +767,94 @@ async function renderEstadisticasTab() {
   }
 }
 
+// ── RENDIMIENTO TAB — helpers ─────────────────────────────────────────────
+let _radarChart = null;
+
+const MODEL_COLORS = {
+  'XGBoost':             '#a78bfa',
+  'LightGBM':            '#38bdf8',
+  'Random Forest':       '#4ade80',
+  'Logistic Regression': '#fbbf24',
+};
+
+function hexToRgba(hex, alpha) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function renderCompChart(varKey, metricsData) {
+  if (_radarChart) { _radarChart.destroy(); _radarChart = null; }
+  const canvas = document.getElementById('comp-radar');
+  if (!canvas || !metricsData[varKey]) return;
+
+  const { modelos } = metricsData[varKey];
+  const labels   = ['Accuracy', 'Precision', 'Recall', 'F1', 'AUC-ROC'];
+  const datasets = modelos.map(m => {
+    const col = MODEL_COLORS[m.nombre] || '#888';
+    return {
+      label:               m.nombre,
+      data:                [m.accuracy, m.precision, m.recall, m.f1, m.auc_roc],
+      borderColor:         col,
+      backgroundColor:     hexToRgba(col, 0.1),
+      pointBackgroundColor: col,
+      pointRadius:         4,
+      borderWidth:         2,
+    };
+  });
+
+  _radarChart = new Chart(canvas.getContext('2d'), {
+    type: 'radar',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      scales: {
+        r: {
+          min: 0,
+          max: 1,
+          ticks: {
+            stepSize: 0.2,
+            color: '#555',
+            font: { size: 9 },
+            backdropColor: 'transparent',
+          },
+          grid:        { color: '#333' },
+          angleLines:  { color: '#333' },
+          pointLabels: { color: '#aaa', font: { size: 11 } },
+        },
+      },
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { color: '#aaa', font: { size: 11 }, boxWidth: 12, padding: 16 },
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => `${ctx.dataset.label}: ${(ctx.raw * 100).toFixed(1)}%`,
+          },
+        },
+      },
+    },
+  });
+
+  const tbody = document.getElementById('comp-table-body');
+  if (!tbody) return;
+  tbody.innerHTML = modelos.map(m => {
+    const col = MODEL_COLORS[m.nombre] || '#888';
+    return `
+      <div class="comp-table-row">
+        <span class="comp-model-name" style="color:${col}">${m.nombre}</span>
+        <span>${(m.accuracy  * 100).toFixed(1)}%</span>
+        <span>${(m.precision * 100).toFixed(1)}%</span>
+        <span>${(m.recall    * 100).toFixed(1)}%</span>
+        <span>${(m.f1        * 100).toFixed(1)}%</span>
+        <span>${m.auc_roc.toFixed(4)}</span>
+      </div>`;
+  }).join('');
+}
+
 // ── RENDIMIENTO TAB ────────────────────────────────────────────────────────
 async function renderRendimientoTab() {
   const tabEl = document.getElementById('tab-rendimiento');
@@ -774,79 +862,145 @@ async function renderRendimientoTab() {
 
   tabEl.innerHTML = `
     <div class="rend-tab-wrap">
-      <div class="rend-tab-header">
-        <span class="pred-tab-title">Rendimiento del modelo</span>
-        <span class="pred-tab-sub">Accuracy por jornada — backtesting post-corte</span>
+      <div class="rend-sub-nav">
+        <div class="rend-sub-tabs">
+          <button class="rend-sub-tab active" data-section="backtesting">Backtesting</button>
+          <button class="rend-sub-tab" data-section="comp">Comparación</button>
+        </div>
       </div>
       <div id="rend-tab-content">
-        <div class="loading-state"><div class="spinner"></div><span>Calculando accuracy...</span></div>
+        <div class="loading-state"><div class="spinner"></div><span>Calculando...</span></div>
       </div>
     </div>`;
 
   const content = document.getElementById('rend-tab-content');
 
   try {
-    const res = await fetch(`${API_URL}/model-performance`);
-    if (!res.ok) throw new Error();
-    const data = await res.json();
+    const [perfRes, metricsRes] = await Promise.all([
+      fetch(`${API_URL}/model-performance`),
+      fetch(`${API_URL}/model-metrics`),
+    ]);
 
-    if (!data.rounds || !data.rounds.length) {
-      content.innerHTML = `<div style="padding:24px 16px;color:var(--text3);font-size:13px">
-        Sin datos post-entrenamiento. Modelos entrenados hasta el 27/04/2026.</div>`;
-      return;
-    }
-
-    const { resumen, rounds } = data;
+    if (!perfRes.ok) throw new Error();
+    const perfData    = await perfRes.json();
+    const metricsData = metricsRes.ok ? await metricsRes.json() : null;
 
     function accColor(pct) {
       return pct >= 70 ? 'acc-green' : pct >= 50 ? 'acc-yellow' : 'acc-red';
     }
 
-    const totalPred = rounds.reduce((s, r) => s + r.total, 0);
-
-    let html = `
-      <div class="acc-summary">
-        <div class="acc-card">
-          <span class="acc-card-label">xG ≥ 1.5</span>
-          <span class="acc-card-value ${accColor(resumen.xg_accuracy)}">${resumen.xg_accuracy}%</span>
-          <span class="acc-card-sub">Accuracy global</span>
+    // ── Sección Backtesting ──────────────────────────────────────────────
+    let backHtml = '';
+    if (!perfData.rounds || !perfData.rounds.length) {
+      backHtml = `<div style="padding:24px 16px;color:var(--text3);font-size:13px">
+        Sin datos post-entrenamiento. Modelos entrenados hasta el 27/04/2026.</div>`;
+    } else {
+      const { resumen, rounds } = perfData;
+      const totalPred = rounds.reduce((s, r) => s + r.total, 0);
+      backHtml = `
+        <div class="acc-summary">
+          <div class="acc-card">
+            <span class="acc-card-label">xG ≥ 1.5</span>
+            <span class="acc-card-value ${accColor(resumen.xg_accuracy)}">${resumen.xg_accuracy}%</span>
+            <span class="acc-card-sub">Accuracy global</span>
+          </div>
+          <div class="acc-card">
+            <span class="acc-card-label">Tiros ≥ 5</span>
+            <span class="acc-card-value ${accColor(resumen.tiros_accuracy)}">${resumen.tiros_accuracy}%</span>
+            <span class="acc-card-sub">Accuracy global</span>
+          </div>
+          <div class="acc-card">
+            <span class="acc-card-label">Goles ≥ 2</span>
+            <span class="acc-card-value ${accColor(resumen.goles_accuracy)}">${resumen.goles_accuracy}%</span>
+            <span class="acc-card-sub">Accuracy global</span>
+          </div>
         </div>
-        <div class="acc-card">
-          <span class="acc-card-label">Tiros &gt; 4</span>
-          <span class="acc-card-value ${accColor(resumen.tiros_accuracy)}">${resumen.tiros_accuracy}%</span>
-          <span class="acc-card-sub">Accuracy global</span>
-        </div>
-        <div class="acc-card">
-          <span class="acc-card-label">Goles ≥ 2</span>
-          <span class="acc-card-value ${accColor(resumen.goles_accuracy)}">${resumen.goles_accuracy}%</span>
-          <span class="acc-card-sub">Accuracy global</span>
-        </div>
-      </div>
-      <div class="rend-meta">${resumen.total_rondas} jornadas evaluadas · ${totalPred} predicciones</div>
-      <div class="rend-table-wrap">
-        <div class="rend-table-head">
-          <span>Ronda</span>
-          <span>Semana del</span>
-          <span style="text-align:center">n</span>
-          <span>xG ≥ 1.5</span>
-          <span>Tiros &gt; 4</span>
-          <span>Goles ≥ 2</span>
+        <div class="rend-meta">${resumen.total_rondas} jornadas evaluadas · ${totalPred} predicciones</div>
+        <div class="rend-table-wrap">
+          <div class="rend-table-head">
+            <span>Ronda</span>
+            <span>Semana del</span>
+            <span style="text-align:center">n</span>
+            <span>xG ≥ 1.5</span>
+            <span>Tiros ≥ 5</span>
+            <span>Goles ≥ 2</span>
+          </div>
+          ${rounds.map((r, i) => `
+            <div class="rend-table-row" style="animation-delay:${i * 0.05}s">
+              <span class="rend-jornada">${r.jornada}</span>
+              <span class="rend-fecha">${r.fecha}</span>
+              <span class="rend-n">${r.total}</span>
+              <span class="acc-badge ${accColor(r.xg_pct)}">${r.xg_pct}%</span>
+              <span class="acc-badge ${accColor(r.tiros_pct)}">${r.tiros_pct}%</span>
+              <span class="acc-badge ${accColor(r.goles_pct)}">${r.goles_pct}%</span>
+            </div>`).join('')}
         </div>`;
+    }
 
-    rounds.forEach((r, i) => {
-      html += `
-        <div class="rend-table-row" style="animation-delay:${i * 0.05}s">
-          <span class="rend-jornada">${r.jornada}</span>
-          <span class="rend-fecha">${r.fecha}</span>
-          <span class="rend-n">${r.total}</span>
-          <span class="acc-badge ${accColor(r.xg_pct)}">${r.xg_pct}%</span>
-          <span class="acc-badge ${accColor(r.tiros_pct)}">${r.tiros_pct}%</span>
-          <span class="acc-badge ${accColor(r.goles_pct)}">${r.goles_pct}%</span>
+    // ── Sección Comparación ───────────────────────────────────────────────
+    let compHtml = '';
+    if (metricsData) {
+      const varKeys = Object.keys(metricsData);
+      compHtml = `
+        <div class="comp-header">
+          <span class="pred-tab-title">Comparación de Algoritmos</span>
+          <span class="pred-tab-sub">Test set — división temporal 80/20</span>
+        </div>
+        <div class="comp-var-tabs" id="comp-var-tabs">
+          ${varKeys.map((k, i) => `
+            <button class="comp-var-tab${i === 0 ? ' active' : ''}" data-var="${k}">
+              ${metricsData[k].label}
+            </button>`).join('')}
+        </div>
+        <div class="comp-chart-wrap">
+          <canvas id="comp-radar"></canvas>
+        </div>
+        <div class="comp-table-wrap">
+          <div class="comp-table-head">
+            <span>Modelo</span>
+            <span>Accuracy</span>
+            <span>Precision</span>
+            <span>Recall</span>
+            <span>F1</span>
+            <span>AUC-ROC</span>
+          </div>
+          <div id="comp-table-body"></div>
         </div>`;
+    } else {
+      compHtml = `<div style="padding:40px;color:var(--text3);font-size:13px;text-align:center">
+        Sin datos de comparación disponibles.</div>`;
+    }
+
+    content.innerHTML = `
+      <div id="rend-section-backtesting" class="rend-section">${backHtml}</div>
+      <div id="rend-section-comp"        class="rend-section comp-section" style="display:none">${compHtml}</div>`;
+
+    // Sub-tab switching
+    document.querySelectorAll('.rend-sub-tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.rend-sub-tab').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const target = btn.dataset.section;
+        document.querySelectorAll('.rend-section').forEach(s => {
+          s.style.display = s.id === `rend-section-${target}` ? '' : 'none';
+        });
+        // Lazy-init: chart solo cuando el canvas es visible
+        if (target === 'comp' && metricsData && !_radarChart) {
+          renderCompChart(Object.keys(metricsData)[0] || 'xg', metricsData);
+        }
+      });
     });
 
-    html += `</div>`;
-    content.innerHTML = html;
+    // Variable tabs dentro de Comparación
+    if (metricsData) {
+      document.querySelectorAll('.comp-var-tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.comp-var-tab').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          renderCompChart(btn.dataset.var, metricsData);
+        });
+      });
+    }
   } catch (_) {
     content.innerHTML = '<div class="empty-tab">No se pudo cargar el rendimiento del modelo</div>';
   }

@@ -1,0 +1,29 @@
+{
+  "xg": {
+    "label": "xG ≥ 1.5",
+    "modelos": [
+      {"nombre": "XGBoost",             "accuracy": 0.6777, "auc_roc": 0.6491, "f1": 0.531,  "precision": 0.5746, "recall": 0.4936},
+      {"nombre": "LightGBM",            "accuracy": 0.6872, "auc_roc": 0.6346, "f1": 0.5075, "precision": 0.6071, "recall": 0.4359},
+      {"nombre": "Random Forest",       "accuracy": 0.6564, "auc_roc": 0.6287, "f1": 0.5085, "precision": 0.5396, "recall": 0.4808},
+      {"nombre": "Logistic Regression", "accuracy": 0.6469, "auc_roc": 0.6791, "f1": 0.5918, "precision": 0.5167, "recall": 0.6923}
+    ]
+  },
+  "tiros": {
+    "label": "Tiros ≥ 5",
+    "modelos": [
+      {"nombre": "XGBoost",             "accuracy": 0.6422, "auc_roc": 0.6511, "f1": 0.5698, "precision": 0.5556, "recall": 0.5848},
+      {"nombre": "LightGBM",            "accuracy": 0.6564, "auc_roc": 0.6418, "f1": 0.5845, "precision": 0.573,  "recall": 0.5965},
+      {"nombre": "Random Forest",       "accuracy": 0.6303, "auc_roc": 0.6289, "f1": 0.5491, "precision": 0.5429, "recall": 0.5556},
+      {"nombre": "Logistic Regression", "accuracy": 0.609,  "auc_roc": 0.6434, "f1": 0.5692, "precision": 0.5142, "recall": 0.6374}
+    ]
+  },
+  "goles": {
+    "label": "Goles ≥ 2",
+    "modelos": [
+      {"nombre": "XGBoost",             "accuracy": 0.6303, "auc_roc": 0.5911, "f1": 0.4265, "precision": 0.5524, "recall": 0.3473},
+      {"nombre": "LightGBM",            "accuracy": 0.6469, "auc_roc": 0.6131, "f1": 0.4419, "precision": 0.59,   "recall": 0.3533},
+      {"nombre": "Random Forest",       "accuracy": 0.6185, "auc_roc": 0.6056, "f1": 0.439,  "precision": 0.525,  "recall": 0.3772},
+      {"nombre": "Logistic Regression", "accuracy": 0.5924, "auc_roc": 0.6452, "f1": 0.5497, "precision": 0.4884, "recall": 0.6287}
+    ]
+  }
+}

@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 import os
 import re
+import json
 
 app = FastAPI(
     title="Liga 1 Perú — Predictor Multi-Modelo",
@@ -416,7 +417,7 @@ def info_modelo():
     return {
         "modelos": {
             "xg":    {"target": "xG >= 1.5",      "features": len(FEATURES_XG)},
-            "tiros": {"target": "Tiros > 4",       "features": len(FEATURES_TIROS)},
+            "tiros": {"target": "Tiros >= 5",       "features": len(FEATURES_TIROS)},
             "goles": {"target": "Goles >= 2",      "features": len(FEATURES_GOLES)},
         },
         "ventanas":  ["prom_3 (momentum inmediato)", "prom_5 (tendencia reciente)"],
@@ -488,6 +489,19 @@ def team_rankings():
     ]
     result.sort(key=lambda x: x['xg_avg'], reverse=True)
     return result
+
+
+@app.get("/model-metrics")
+def model_metrics():
+    """Métricas comparativas de 4 algoritmos para las 3 variables objetivo."""
+    path = "metricas_modelos.json"
+    if not os.path.exists(path):
+        raise HTTPException(status_code=404, detail="metricas_modelos.json no encontrado")
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error leyendo métricas: {e}")
 
 
 @app.get("/model-performance")
