@@ -527,7 +527,7 @@ async function renderPredictionsTab(round) {
   }
 
   container.innerHTML =
-    `<div style="padding:16px;color:var(--text3);font-size:12px">Cargando predicciones…</div>`;
+    `<div class="loading-state"><div class="spinner"></div><span>Cargando predicciones…</span></div>`;
 
   // Predicciones del modelo + resultados reales en paralelo
   const [preds, results] = await Promise.all([
@@ -646,7 +646,7 @@ function buildPredCardHTML(m, data, result = null) {
 
 // ── ESTADÍSTICAS TAB ──────────────────────────────────────────────────────
 let _statsData = null;
-let _statsSort = { col: 'xg_avg', dir: -1 }; // -1 = desc, 1 = asc
+let _statsSort = { col: 'xg_avg', dir: 1 }; // 1 = asc, -1 = desc
 
 function renderStatsTable() {
   const content = document.getElementById('stats-table-content');
