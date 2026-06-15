@@ -1,5 +1,8 @@
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 import joblib
 import pandas as pd
 import numpy as np
@@ -7,11 +10,16 @@ import os
 import re
 import json
 
+limiter = Limiter(key_func=get_remote_address)
+
 app = FastAPI(
     title="Liga 1 Perú — Predictor Multi-Modelo",
     description="Predice xG>=1.5, Tiros>4 y Goles>=2 por equipo",
     version="2.0.0"
 )
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
@@ -302,7 +310,8 @@ def _precompute_performance():
 
 
 @app.get("/")
-def root():
+@limiter.limit("60/minute")
+def root(request: Request):
     return {
         "sistema": "Liga 1 Perú — Predictor Multi-Modelo",
         "modelos": {
@@ -315,7 +324,8 @@ def root():
 
 
 @app.get("/health")
-def health():
+@limiter.limit("60/minute")
+def health(request: Request):
     return {
         "modelo_xg":    modelo_xg    is not None,
         "modelo_tiros": modelo_tiros is not None,
@@ -330,7 +340,9 @@ def health():
 
 
 @app.get("/predict-match")
+@limiter.limit("30/minute")
 def predict_match(
+    request: Request,
     home: str = Query(..., description="Nombre del equipo local"),
     away: str = Query(..., description="Nombre del equipo visitante"),
 ):
@@ -368,7 +380,9 @@ def predict_match(
 
 
 @app.get("/match-result")
+@limiter.limit("60/minute")
 def match_result(
+    request: Request,
     home: str = Query(..., description="Equipo local"),
     away: str = Query(..., description="Equipo visitante"),
 ):
@@ -413,7 +427,8 @@ def match_result(
 
 
 @app.get("/modelo-info")
-def info_modelo():
+@limiter.limit("60/minute")
+def info_modelo(request: Request):
     return {
         "modelos": {
             "xg":    {"target": "xG >= 1.5",      "features": len(FEATURES_XG)},
@@ -426,7 +441,8 @@ def info_modelo():
 
 
 @app.get("/team-rankings")
-def team_rankings():
+@limiter.limit("60/minute")
+def team_rankings(request: Request):
     """Ranking ofensivo de equipos: xG, tiros y goles promedio por partido (solo 2026)."""
     if df_historico is None:
         raise HTTPException(status_code=503, detail="Datos no disponibles")
@@ -492,7 +508,8 @@ def team_rankings():
 
 
 @app.get("/model-metrics")
-def model_metrics():
+@limiter.limit("60/minute")
+def model_metrics(request: Request):
     """Métricas comparativas de 4 algoritmos para las 3 variables objetivo."""
     path = "metricas_modelos.json"
     if not os.path.exists(path):
@@ -505,7 +522,8 @@ def model_metrics():
 
 
 @app.get("/model-performance")
-def model_performance():
+@limiter.limit("60/minute")
+def model_performance(request: Request):
     """Accuracy de los 3 modelos por jornada (backtesting post-corte)."""
     if not _perf_by_round:
         return {
