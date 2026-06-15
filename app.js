@@ -54,7 +54,7 @@ let currentRound  = 17;
 let ROUND_MAX     = 17;
 const ROUND_MIN   = 1;
 let standingsData = [];
-const predCache   = {};   // { "HomeTeam|AwayTeam": { local:{...}, visitante:{...} } }
+const predCache   = {};
 let _statsLoaded  = false;
 let _rendLoaded   = false;
 
@@ -213,13 +213,14 @@ function renderStandings(data) {
       ? `https://img.sofascore.com/api/v1/team/${teamId}/image`
       : '';
 
-    const pj  = row['PJ']  || '-';
-    const pg  = row['PG']  || '-';
-    const pe  = row['PE']  || '-';
-    const pp  = row['PP']  || '-';
-    const dif = row['DIF'] || '-';
-    const gls = row['Goles']   || '-';
-    const pts = row['Puntos']  || '-';
+    const nv  = v => (v !== undefined && v !== null && v !== '') ? v : 0;
+    const pj  = nv(row['PJ']);
+    const pg  = nv(row['PG']);
+    const pe  = nv(row['PE']);
+    const pp  = nv(row['PP']);
+    const dif = nv(row['DIF']);
+    const gls = nv(row['Goles']);
+    const pts = nv(row['Puntos']);
     const forma = (row['Ultimos_5'] || '').trim();
 
     // Separadores de zona
@@ -313,7 +314,6 @@ function renderMatches(round) {
         </div>
       </div>
       ${scoreHtml}
-      <div class="match-fav" onclick="toggleFav(this)">☆</div>
     </div>`;
 
     if (i < matches.length - 1) {
@@ -415,22 +415,22 @@ function renderDestacado(round) {
   const matches = MATCHES[round] || [];
   const played  = matches.filter(m => m.sh !== null);
 
+  let featured, showScore;
+
   if (!played.length) {
-    // Mostrar el próximo partido sin jugar
     const next = matches.find(m => m.sh === null);
     if (!next) {
       el.innerHTML = `<div class="match-no-data">Sin partidos en esta jornada</div>`;
       return;
     }
-    el.innerHTML = buildDestacadoHTML(next, false);
-    return;
+    featured = next;
+    showScore = false;
+  } else {
+    featured = played.reduce((a, b) => (a.sh + a.sa) >= (b.sh + b.sa) ? a : b);
+    showScore = true;
   }
 
-  // Partido con más goles totales
-  const top = played.reduce((a, b) =>
-    (a.sh + a.sa) >= (b.sh + b.sa) ? a : b
-  );
-  el.innerHTML = buildDestacadoHTML(top, true);
+  el.innerHTML = buildDestacadoHTML(featured, showScore);
 }
 
 function buildDestacadoHTML(m, showScore) {
@@ -454,11 +454,6 @@ function buildDestacadoHTML(m, showScore) {
     </div>`;
 }
 
-// ── FAVORITOS ─────────────────────────────────────────────────────────────
-function toggleFav(el) {
-  el.classList.toggle('active');
-  el.textContent = el.classList.contains('active') ? '★' : '☆';
-}
 
 // ── PROGRESS BAR ─────────────────────────────────────────────────────────
 function updateProgress() {
@@ -543,15 +538,16 @@ async function renderPredictionsTab(round) {
   const html = matches.map((m, i) => {
     const pred = preds[i];
     if (!pred) {
-      return `<div class="pred-card" style="padding:14px;color:var(--text3);font-size:12px;
+      return `<div class="pred-card" id="pred-card-${round}-${i}" style="padding:14px;color:var(--text3);font-size:12px;
               text-align:center">${m.homeName} vs ${m.awayName} — sin datos del modelo</div>`;
     }
-    return `<div class="pred-card" style="animation-delay:${i * 0.05}s">
+    return `<div class="pred-card" id="pred-card-${round}-${i}" style="animation-delay:${i * 0.05}s">
               ${buildPredCardHTML(m, pred, results[i])}
             </div>`;
   }).join('');
 
   container.innerHTML = html;
+
 }
 
 function buildPredCardHTML(m, data, result = null) {
@@ -664,8 +660,7 @@ async function renderEstadisticasTab() {
   tabEl.innerHTML = `
     <div class="stats-tab-wrap">
       <div class="stats-tab-header">
-        <span class="pred-tab-title">Estadísticas ofensivas</span>
-        <span class="pred-tab-sub">Promedios por partido — Apertura 2026</span>
+        <span class="pred-tab-title">Promedio de estadísticas ofensivas</span>
       </div>
       <div class="stats-table-wrap">
         <div id="stats-table-content">
@@ -689,26 +684,26 @@ async function renderEstadisticasTab() {
     const maxXG    = Math.max(...data.map(t => t.xg_avg));
     const maxTiros = Math.max(...data.map(t => t.tiros_avg));
     const maxGoles = Math.max(...data.map(t => t.goles_avg));
-    const maxPos   = Math.max(...data.map(t => t.posesion_avg));
+    const maxTot   = Math.max(...data.map(t => t.tiros_tot_avg));
 
     let html = `
       <div class="stats-table-head">
         <span>#</span>
         <span>Equipo</span>
         <span style="text-align:center">PJ</span>
-        <span>xG prom ↓</span>
-        <span>Tiros prom</span>
-        <span>Goles prom</span>
-        <span>Posesión</span>
+        <span>Goles Esperados</span>
+        <span>Tiros a Puerta</span>
+        <span>Goles</span>
+        <span>Tiros Totales</span>
       </div>`;
 
     data.forEach((team, i) => {
       const id   = getTeamId(team.equipo);
       const logo = id ? `https://img.sofascore.com/api/v1/team/${id}/image` : '';
-      const xgW   = ((team.xg_avg      / maxXG)    * 100).toFixed(0);
-      const tirW  = ((team.tiros_avg   / maxTiros)  * 100).toFixed(0);
-      const golW  = ((team.goles_avg   / maxGoles)  * 100).toFixed(0);
-      const posW  = ((team.posesion_avg / maxPos)   * 100).toFixed(0);
+      const xgW   = ((team.xg_avg       / maxXG)    * 100).toFixed(0);
+      const tirW  = ((team.tiros_avg    / maxTiros)  * 100).toFixed(0);
+      const golW  = ((team.goles_avg    / maxGoles)  * 100).toFixed(0);
+      const totW  = ((team.tiros_tot_avg / maxTot)   * 100).toFixed(0);
       const xgHi  = team.xg_avg    >= 1.5;
       const tirHi = team.tiros_avg >= 5;
       const golHi = team.goles_avg >= 2;
@@ -725,8 +720,7 @@ async function renderEstadisticasTab() {
           <span class="stats-num-cell">${team.partidos}</span>
           <div class="stats-bar-cell">
             <div class="stats-bar-header">
-              <span class="stats-val${xgHi ? ' stat-hi' : ''}">${team.xg_avg}</span>
-              ${xgHi ? '<span class="stats-hi-dot">●</span>' : ''}
+              <span class="stats-val${xgHi ? ' stat-hi' : ''}">${parseFloat(team.xg_avg).toFixed(2)}</span>
             </div>
             <div class="stats-mini-bar-track">
               <div class="stats-mini-bar-fill xg-bar" style="width:${xgW}%"></div>
@@ -734,8 +728,7 @@ async function renderEstadisticasTab() {
           </div>
           <div class="stats-bar-cell">
             <div class="stats-bar-header">
-              <span class="stats-val${tirHi ? ' stat-hi' : ''}">${team.tiros_avg}</span>
-              ${tirHi ? '<span class="stats-hi-dot">●</span>' : ''}
+              <span class="stats-val${tirHi ? ' stat-hi' : ''}">${parseFloat(team.tiros_avg).toFixed(1)}</span>
             </div>
             <div class="stats-mini-bar-track">
               <div class="stats-mini-bar-fill tiros-bar" style="width:${tirW}%"></div>
@@ -743,8 +736,7 @@ async function renderEstadisticasTab() {
           </div>
           <div class="stats-bar-cell">
             <div class="stats-bar-header">
-              <span class="stats-val${golHi ? ' stat-hi' : ''}">${team.goles_avg}</span>
-              ${golHi ? '<span class="stats-hi-dot">●</span>' : ''}
+              <span class="stats-val${golHi ? ' stat-hi' : ''}">${parseFloat(team.goles_avg).toFixed(2)}</span>
             </div>
             <div class="stats-mini-bar-track">
               <div class="stats-mini-bar-fill goles-bar" style="width:${golW}%"></div>
@@ -752,10 +744,10 @@ async function renderEstadisticasTab() {
           </div>
           <div class="stats-bar-cell">
             <div class="stats-bar-header">
-              <span class="stats-val">${team.posesion_avg}%</span>
+              <span class="stats-val">${parseFloat(team.tiros_tot_avg).toFixed(1)}</span>
             </div>
             <div class="stats-mini-bar-track">
-              <div class="stats-mini-bar-fill posesion-bar" style="width:${posW}%"></div>
+              <div class="stats-mini-bar-fill tiros-tot-bar" style="width:${totW}%"></div>
             </div>
           </div>
         </div>`;
@@ -826,10 +818,7 @@ function renderCompChart(varKey, metricsData) {
         },
       },
       plugins: {
-        legend: {
-          position: 'bottom',
-          labels: { color: '#ddd', font: { size: 11 }, boxWidth: 12, padding: 16 },
-        },
+        legend: { display: false },
         tooltip: {
           callbacks: {
             label: ctx => `${ctx.dataset.label}: ${(ctx.raw * 100).toFixed(1)}%`,
@@ -838,6 +827,29 @@ function renderCompChart(varKey, metricsData) {
       },
     },
   });
+
+  // Leyenda custom tipo checklist
+  const legendEl = document.getElementById('comp-legend');
+  if (legendEl) {
+    legendEl.innerHTML = modelos.map((m, i) => {
+      const col = MODEL_COLORS[m.nombre] || '#888';
+      return `
+        <div class="comp-legend-item" data-index="${i}">
+          <div class="comp-legend-box" style="background:${col}; border-color:${col}"></div>
+          <span>${m.nombre}</span>
+        </div>`;
+    }).join('');
+
+    legendEl.querySelectorAll('.comp-legend-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const idx  = parseInt(item.dataset.index);
+        const meta = _radarChart.getDatasetMeta(idx);
+        meta.hidden = !meta.hidden;
+        item.classList.toggle('legend-off', meta.hidden);
+        _radarChart.update();
+      });
+    });
+  }
 
   const tbody = document.getElementById('comp-table-body');
   if (!tbody) return;
@@ -956,6 +968,7 @@ async function renderRendimientoTab() {
           <div class="comp-chart-wrap">
             <canvas id="comp-radar"></canvas>
           </div>
+          <div id="comp-legend" class="comp-legend"></div>
           <div class="comp-table-wrap">
             <div class="comp-table-head">
               <span>Modelo</span>
@@ -1008,26 +1021,62 @@ async function renderRendimientoTab() {
   }
 }
 
+function computeFilteredStandings(filter) {
+  if (filter === 'all' || !Object.keys(MATCHES).length) return standingsData;
+
+  const isHome = filter === 'home';
+  const teams  = {};
+
+  Object.values(MATCHES).forEach(roundMatches => {
+    roundMatches.forEach(m => {
+      if (m.sh === null) return; // partido no jugado
+
+      const rawName = isHome ? m.homeName : m.awayName;
+      const team    = TEAM_NAME_MAP[rawName] || rawName;
+      const gf      = isHome ? m.sh : m.sa;
+      const ga      = isHome ? m.sa : m.sh;
+
+      if (!teams[team]) teams[team] = { pj:0, pg:0, pe:0, pp:0, gf:0, ga:0, forma:[] };
+      const t = teams[team];
+      t.pj++; t.gf += gf; t.ga += ga;
+      if      (gf > ga)  { t.pg++; t.forma.push('V'); }
+      else if (gf === ga) { t.pe++; t.forma.push('E'); }
+      else               { t.pp++; t.forma.push('D'); }
+    });
+  });
+
+  const result = Object.entries(teams).map(([name, s]) => {
+    const dif = s.gf - s.ga;
+    return {
+      Equipo:    name,
+      PJ:        s.pj,
+      PG:        s.pg,
+      PE:        s.pe,
+      PP:        s.pp,
+      DIF:       dif >= 0 ? `+${dif}` : `${dif}`,
+      Goles:     `${s.gf}:${s.ga}`,
+      Puntos:    s.pg * 3 + s.pe,
+      Ultimos_5: s.forma.slice(-5).join(''),
+      _dif:      dif,
+    };
+  });
+
+  // Orden: Pts → DIF → Goles a favor
+  result.sort((a, b) => b.Puntos - a.Puntos || b._dif - a._dif || 0);
+  result.forEach((r, i) => { r.Posicion = i + 1; });
+  return result;
+}
+
 function setupSubTabs() {
   document.querySelectorAll('.sub-tab').forEach(tab => {
     tab.addEventListener('click', () => {
       document.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
-      // TODO: filtrar tabla por local/visitante
+      renderStandings(computeFilteredStandings(tab.dataset.filter));
     });
   });
 }
 
-function setupPartidosTabs() {
-  document.getElementById('tab-fecha').addEventListener('click', function() {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    this.classList.add('active');
-  });
-  document.getElementById('tab-jornada').addEventListener('click', function() {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    this.classList.add('active');
-  });
-}
 
 function setupRoundNav() {
   document.getElementById('btn-prev').addEventListener('click', () => changeRound(-1));
@@ -1044,7 +1093,6 @@ function setupRoundNav() {
 document.addEventListener('DOMContentLoaded', () => {
   setupMainTabs();
   setupSubTabs();
-  setupPartidosTabs();
   buildRoundSelect();
   setupRoundNav();
 

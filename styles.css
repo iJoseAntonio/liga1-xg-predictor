@@ -35,6 +35,16 @@ img { display: block; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
+/* ── PAGE WRAP (centrado máximo) ────────────────────────────────────────── */
+.page-wrap {
+  max-width: 1280px;
+  margin: 0 auto;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 /* ── HEADER ────────────────────────────────────────────────────────────── */
 .header-wrap {
   position: sticky;
@@ -95,28 +105,23 @@ img { display: block; }
 .flag { width: 22px; height: 16px; border-radius: 3px; object-fit: cover; }
 .country { font-size: 14px; color: var(--text2); font-weight: 500; }
 
-.season-select {
+.season-label {
   background: var(--surface3);
   border: 1px solid var(--border);
-  color: var(--text);
+  color: var(--text2);
   font-size: 12px;
-  padding: 3px 8px;
+  font-weight: 600;
+  padding: 3px 10px;
   border-radius: 6px;
-  cursor: pointer;
-  font-family: 'DM Sans', sans-serif;
-  outline: none;
-  transition: border-color 0.2s;
 }
-.season-select:hover { border-color: var(--accent); }
 
-.progress-wrap { margin-top: 8px; }
+.progress-wrap { margin-top: 8px;padding-right: 30px; }
 
 .progress-bar {
   height: 3px;
   background: var(--surface3);
   border-radius: 2px;
   overflow: hidden;
-  max-width: 340px;
 }
 .progress-fill {
   height: 100%;
@@ -128,9 +133,8 @@ img { display: block; }
 .progress-dates {
   display: flex;
   justify-content: space-between;
-  max-width: 340px;
   font-size: 10px;
-  color: var(--text3);
+  color: var(--text);
   margin-top: 3px;
 }
 
@@ -140,7 +144,7 @@ img { display: block; }
   grid-template-columns: 300px 1fr;
   gap: 8px;
   padding: 8px 28px 12px;
-  height: calc(100vh - var(--header-h));
+  flex: 1;
   overflow: hidden;
 }
 
@@ -195,6 +199,7 @@ img { display: block; }
   color: var(--text);
   line-height: 1.2;
 }
+
 
 .match-center { text-align: center; flex-shrink: 0; }
 
@@ -264,13 +269,6 @@ img { display: block; }
   margin-bottom: 10px;
 }
 
-.tab-group {
-  display: flex;
-  background: var(--surface3);
-  border-radius: 20px;
-  padding: 3px;
-  gap: 2px;
-}
 .tab-btn {
   flex: 1;
   padding: 5px 10px;
@@ -350,6 +348,25 @@ img { display: block; }
 }
 .match-row:hover { background: var(--surface3); }
 
+.date-group-sep {
+  padding: 5px 14px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text2);
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+.match-rnd {
+  font-size: 9px;
+  color: var(--text3);
+  font-family: 'DM Mono', monospace;
+  display: block;
+  line-height: 1.2;
+}
+
 .match-sep {
   height: 1px;
   background: var(--border);
@@ -400,18 +417,6 @@ img { display: block; }
 }
 .match-score.winner { font-weight: 700; color: var(--text); }
 
-.match-fav {
-  flex-shrink: 0;
-  color: var(--text3);
-  font-size: 14px;
-  cursor: pointer;
-  padding: 2px;
-  line-height: 1;
-  transition: color 0.15s;
-  user-select: none;
-}
-.match-fav:hover  { color: var(--yellow); }
-.match-fav.active { color: var(--yellow); }
 
 /* ── RIGHT PANEL ───────────────────────────────────────────────────────── */
 .right-panel {
@@ -523,7 +528,7 @@ img { display: block; }
   gap: 2px;
   padding: 6px 12px;
   font-size: 10px;
-  color: var(--text3);
+  color: var(--text);
   align-items: center;
   border-bottom: 1px solid var(--border);
   position: sticky;
@@ -651,6 +656,17 @@ img { display: block; }
 .leg-dot { width: 8px; height: 8px; border-radius: 50%; }
 .playoff-dot    { background: var(--yellow); }
 .relegation-dot { background: var(--red); }
+
+.col-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  padding: 6px 14px 10px;
+  font-size: 10px;
+  color: var(--text3);
+  border-top: 1px solid var(--border);
+}
+.col-legend b { color: var(--text2); margin-right: 2px; }
 
 /* ── LOADING / ERROR STATES ────────────────────────────────────────────── */
 .loading-state {
@@ -954,7 +970,7 @@ img { display: block; }
   gap: 6px;
   padding: 6px 8px;
   font-size: 10px;
-  color: var(--text3);
+  color: var(--text);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   border-bottom: 1px solid var(--border);
@@ -979,7 +995,7 @@ img { display: block; }
 
 .stats-rank {
   font-size: 12px;
-  color: var(--text3);
+  color: var(--text);
   font-family: 'DM Mono', monospace;
   text-align: center;
 }
@@ -1007,7 +1023,7 @@ img { display: block; }
 .stats-num-cell {
   font-size: 12px;
   font-family: 'DM Mono', monospace;
-  color: var(--text2);
+  color: var(--text);
   text-align: center;
 }
 
@@ -1025,7 +1041,7 @@ img { display: block; }
 
 .stats-val {
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 400;
   font-family: 'DM Mono', monospace;
   color: var(--text);
 }
@@ -1051,7 +1067,7 @@ img { display: block; }
 .xg-bar      { background: var(--accent); }
 .tiros-bar   { background: var(--yellow); }
 .goles-bar   { background: var(--green);  }
-.posesion-bar{ background: #38bdf8; }
+.tiros-tot-bar { background: #38bdf8; }
 
 /* ── RENDIMIENTO TAB ──────────────────────────────────────────────────────── */
 .rend-tab-wrap {
@@ -1268,20 +1284,22 @@ img { display: block; }
 
 .comp-content {
   display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-  align-items: start;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .comp-chart-wrap {
-  flex: 3 1 240px;   /* crece 3x más que la tabla; puede encogerse hasta 240px */
-  min-width: 0;      /* evita que el canvas bloquee el reflow al agrandar la ventana */
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
   position: relative;
-  height: 420px;     /* altura fija — no cambia al pasar a columna */
+  height: 320px;
 }
 
 .comp-table-wrap {
-  flex: 2 0 514px;   /* 390px cols fijas + 20px gaps + 24px padding + 80px "Modelo" */
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
@@ -1289,9 +1307,9 @@ img { display: block; }
 
 .comp-table-head {
   display: grid;
-  grid-template-columns: 1fr 80px 80px 80px 70px 80px;
+  grid-template-columns: 160px 80px 82px 72px 64px 80px;
   gap: 4px;
-  padding: 8px 12px;
+  padding: 8px 14px;
   font-size: 10px;
   color: var(--text);
   text-transform: uppercase;
@@ -1303,9 +1321,9 @@ img { display: block; }
 
 .comp-table-row {
   display: grid;
-  grid-template-columns: 1fr 80px 80px 80px 70px 80px;
+  grid-template-columns: 160px 80px 82px 72px 64px 80px;
   gap: 4px;
-  padding: 10px 12px;
+  padding: 10px 14px;
   align-items: center;
   border-bottom: 1px solid var(--border);
   font-size: 12px;
@@ -1321,5 +1339,42 @@ img { display: block; }
   font-size: 12px;
   font-weight: 600;
   font-family: 'DM Sans', sans-serif;
+}
+
+/* Leyenda checklist */
+.comp-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px 20px;
+  padding: 4px 0 8px;
+}
+
+.comp-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 12px;
+  color: var(--text2);
+  transition: color 0.2s;
+}
+.comp-legend-item:hover { color: var(--text); }
+
+.comp-legend-box {
+  width: 13px;
+  height: 13px;
+  border-radius: 3px;
+  border: 2px solid;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+
+.comp-legend-item.legend-off .comp-legend-box {
+  background: transparent !important;
+}
+.comp-legend-item.legend-off {
+  color: var(--text3);
 }
 

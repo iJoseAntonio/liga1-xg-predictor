@@ -460,29 +460,29 @@ def team_rankings():
             if valid_teams and team not in valid_teams:
                 continue
             if team not in teams:
-                teams[team] = {'xg': [], 'tiros': [], 'goles': [], 'posesion': []}
+                teams[team] = {'xg': [], 'tiros': [], 'goles': [], 'tiros_tot': []}
 
             def nv(col, s=sfx, r=row):
                 return pd.to_numeric(r.get(f'{col}{s}', 0), errors='coerce') or 0.0
 
-            xg  = nv('Goles esperados (xG)')
-            tir = nv('Tiros a puerta')
-            gol = nv('goles')
-            pos = nv('Posesión de pelota')
+            xg      = nv('Goles esperados (xG)')
+            tir     = nv('Tiros a puerta')
+            gol     = nv('goles')
+            tir_tot = nv('Tiros totales')
             if xg > 0 or tir > 0:
                 teams[team]['xg'].append(xg)
                 teams[team]['tiros'].append(tir)
                 teams[team]['goles'].append(gol)
-                teams[team]['posesion'].append(pos)
+                teams[team]['tiros_tot'].append(tir_tot)
 
     result = [
         {
-            'equipo':       t,
-            'partidos':     len(s['xg']),
-            'xg_avg':       round(float(np.mean(s['xg'])),      2),
-            'tiros_avg':    round(float(np.mean(s['tiros'])),    1),
-            'goles_avg':    round(float(np.mean(s['goles'])),    2),
-            'posesion_avg': round(float(np.mean(s['posesion'])), 1),
+            'equipo':          t,
+            'partidos':        len(s['xg']),
+            'xg_avg':          round(float(np.mean(s['xg'])),       2),
+            'tiros_avg':       round(float(np.mean(s['tiros'])),     1),
+            'goles_avg':       round(float(np.mean(s['goles'])),     2),
+            'tiros_tot_avg':   round(float(np.mean(s['tiros_tot'])), 1),
         }
         for t, s in teams.items()
         if s['xg']

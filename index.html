@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <div class="page-wrap">
 
   <!-- ── HEADER ── -->
   <div class="header-wrap">
@@ -26,11 +27,7 @@
                src="https://img.sofascore.com/api/v1/country/PE/flag"
                alt="PE">
           <span class="country">Perú</span>
-          <select class="season-select" id="season-select">
-            <option value="2026" selected>2026</option>
-            <option value="2025">2025</option>
-            <option value="2024">2024</option>
-          </select>
+          <span class="season-label">2026</span>
         </div>
         <div class="progress-wrap">
           <div class="progress-bar"><div class="progress-fill"></div></div>
@@ -56,10 +53,6 @@
       <div class="partidos-section">
         <div class="partidos-header">
           <div class="partidos-title">Partidos</div>
-          <div class="tab-group">
-            <button class="tab-btn" id="tab-fecha">Por fecha</button>
-            <button class="tab-btn active" id="tab-jornada">Por jornada</button>
-          </div>
           <div class="jornada-nav">
             <button class="nav-arrow" id="btn-prev">&#8249;</button>
             <select class="jornada-select" id="round-select"></select>
@@ -139,6 +132,14 @@
             <div class="leg-item"><div class="fb e" style="width:10px;height:10px"></div>Empate</div>
             <div class="leg-item"><div class="fb d" style="width:10px;height:10px"></div>Derrota</div>
           </div>
+          <div class="col-legend">
+            <span><b>PJ</b> Jugados</span>
+            <span><b>PG</b> Ganados</span>
+            <span><b>PE</b> Empatados</span>
+            <span><b>PP</b> Perdidos</span>
+            <span><b>DIF</b> Diferencia de Goles</span>
+            <span><b>Pts</b> Puntos</span>
+          </div>
         </div>
       </div>
 
@@ -160,6 +161,7 @@
     </main>
   </div>
 
+  </div><!-- /.page-wrap -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="app.js"></script>
 </body>
