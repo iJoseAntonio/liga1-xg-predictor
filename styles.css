@@ -604,6 +604,7 @@ img { display: block; }
 }
 .td.pts {
   font-weight: 700;
+  font-family: 'DM Sans', sans-serif;
   color: var(--text);
   font-size: 13px;
 }
@@ -651,7 +652,7 @@ img { display: block; }
   align-items: center;
   gap: 5px;
   font-size: 10px;
-  color: var(--text3);
+  color: var(--text);
 }
 .leg-dot { width: 8px; height: 8px; border-radius: 50%; }
 .playoff-dot    { background: var(--yellow); }
@@ -663,10 +664,10 @@ img { display: block; }
   gap: 4px 14px;
   padding: 6px 14px 10px;
   font-size: 10px;
-  color: var(--text3);
+  color: var(--text);
   border-top: 1px solid var(--border);
 }
-.col-legend b { color: var(--text2); margin-right: 2px; }
+.col-legend b { color: var(--text3); margin-right: 2px; }
 
 /* ── LOADING / ERROR STATES ────────────────────────────────────────────── */
 .loading-state {
@@ -731,9 +732,20 @@ img { display: block; }
 /* ── PREDICCIONES TAB ────────────────────────────────────────────────────── */
 .pred-tab-header {
   display: flex;
-  align-items: baseline;
+  align-items: center;
+  justify-content: space-between;
   gap: 10px;
   padding: 16px 16px 8px;
+}
+.pred-abbr-legend {
+  display: flex;
+  gap: 14px;
+  font-size: 10px;
+  color: var(--text);
+}
+.pred-abbr-legend b {
+  color: var(--text3);
+  margin-right: 3px;
 }
 .pred-tab-title {
   font-size: 15px;
@@ -847,7 +859,7 @@ img { display: block; }
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 1px;
-  color: var(--text3);
+  color: var(--text);
 }
 .pred-scorebox {
   font-size: 18px;
@@ -858,7 +870,7 @@ img { display: block; }
   align-items: center;
   color: var(--text);
 }
-.pred-scorebox span { color: var(--text3); font-size: 14px; }
+.pred-scorebox span { color: var(--text); font-size: 14px; }
 .pred-matchdate { font-size: 10px; color: var(--text3); }
 
 /* Stats reales del partido */
@@ -869,7 +881,7 @@ img { display: block; }
   margin-top: 2px;
 }
 
-/* Check/fail */
+/* Check/fail al costado del nombre */
 .pred-check {
   font-size: 11px;
   font-weight: 700;
@@ -886,6 +898,7 @@ img { display: block; }
   flex-shrink: 0;
 }
 
+
 /* Stack de 3 barras */
 .pred-bars-stack {
   display: flex;
@@ -899,21 +912,32 @@ img { display: block; }
   display: grid;
   grid-template-columns: 56px 1fr 32px;
   align-items: center;
-  gap: 6px;
+  gap: 3px;
 }
 .pred-bar-row.away {
   grid-template-columns: 32px 1fr 56px;
 }
 
 .pred-bar-label {
-  font-size: 9px;
-  color: var(--text2);
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
   white-space: nowrap;
 }
+.pbl-abbr {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.pbl-thresh {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text);
+}
 .pred-bar-row.away .pred-bar-label {
-  text-align: right;
+  justify-content: flex-end;
 }
 
 .pred-bar-track {
@@ -1045,7 +1069,17 @@ img { display: block; }
   font-family: 'DM Mono', monospace;
   color: var(--text);
 }
-.stats-val.stat-hi { color: var(--green); }
+.stats-sort-th {
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+.stats-sort-th:hover { color: var(--text2); }
+.sort-arr    { font-size: 9px; color: var(--text); }
+.sort-arr.on { color: var(--text); }
 
 .stats-hi-dot {
   font-size: 7px;
@@ -1106,7 +1140,7 @@ img { display: block; }
 
 .acc-card-label {
   font-size: 9px;
-  color: var(--text2);
+  color: var(--text);
   text-transform: uppercase;
   letter-spacing: 0.8px;
   font-weight: 600;
@@ -1124,7 +1158,7 @@ img { display: block; }
 
 .acc-card-sub {
   font-size: 9px;
-  color: var(--text2);
+  color: var(--text);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -1152,7 +1186,7 @@ img { display: block; }
   gap: 8px;
   padding: 6px 8px;
   font-size: 10px;
-  color: var(--text2);
+  color: var(--text);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   border-bottom: 1px solid var(--border);
@@ -1176,22 +1210,24 @@ img { display: block; }
 .rend-table-row:hover { background: var(--surface3); }
 
 .rend-jornada {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 400;
   color: var(--text);
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', sans-serif;
 }
 
 .rend-fecha {
   font-size: 11px;
-  color: var(--text2);
-  font-family: 'DM Mono', monospace;
+  font-weight: 400;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
 }
 
 .rend-n {
   font-size: 11px;
-  color: var(--text2);
-  font-family: 'DM Mono', monospace;
+  font-weight: 400;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
   text-align: center;
 }
 
@@ -1262,6 +1298,7 @@ img { display: block; }
   padding: 3px;
   gap: 2px;
   width: fit-content;
+  margin-top: 16px;
   margin-bottom: 18px;
 }
 

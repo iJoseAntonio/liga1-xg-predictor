@@ -1,6 +1,6 @@
 {
   "xg": {
-    "label": "xG ≥ 1.5",
+    "label": "Goles Esperados ≥ 1.5",
     "modelos": [
       {"nombre": "XGBoost",             "accuracy": 0.6777, "auc_roc": 0.6491, "f1": 0.531,  "precision": 0.5746, "recall": 0.4936},
       {"nombre": "LightGBM",            "accuracy": 0.6872, "auc_roc": 0.6346, "f1": 0.5075, "precision": 0.6071, "recall": 0.4359},
@@ -9,7 +9,7 @@
     ]
   },
   "tiros": {
-    "label": "Tiros ≥ 5",
+    "label": "Tiros a Puerta ≥ 5",
     "modelos": [
       {"nombre": "XGBoost",             "accuracy": 0.6422, "auc_roc": 0.6511, "f1": 0.5698, "precision": 0.5556, "recall": 0.5848},
       {"nombre": "LightGBM",            "accuracy": 0.6564, "auc_roc": 0.6418, "f1": 0.5845, "precision": 0.573,  "recall": 0.5965},
@@ -18,7 +18,7 @@
     ]
   },
   "goles": {
-    "label": "Goles ≥ 2",
+    "label": "Goles Anotados ≥ 2",
     "modelos": [
       {"nombre": "XGBoost",             "accuracy": 0.6303, "auc_roc": 0.5911, "f1": 0.4265, "precision": 0.5524, "recall": 0.3473},
       {"nombre": "LightGBM",            "accuracy": 0.6469, "auc_roc": 0.6131, "f1": 0.4419, "precision": 0.59,   "recall": 0.3533},

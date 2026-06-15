@@ -515,10 +515,10 @@ function isPredTabActive() {
 // ── PREDICCIONES TAB ──────────────────────────────────────────────────────
 async function renderPredictionsTab(round) {
   const container = document.getElementById('pred-tab-content');
-  const subtitle  = document.getElementById('pred-tab-round');
+  const titleEl = document.getElementById('pred-tab-round');
   if (!container) return;
 
-  if (subtitle) subtitle.textContent = `Apertura — Jornada ${round}`;
+  if (titleEl) titleEl.textContent = `Apertura — Jornada ${round}`;
 
   const matches = MATCHES[round] || [];
   if (!matches.length) {
@@ -560,30 +560,18 @@ function buildPredCardHTML(m, data, result = null) {
   const aTir = data.visitante.tiros;
   const aGol = data.visitante.goles;
 
-  // Verificación ✓/✗ por cada modelo (solo cuando hay resultado real)
-  function chk(predicted, real) {
-    if (real === undefined || real === null) return '';
-    const ok = predicted === real;
+  // ✓ si el modelo acertó (predijo alto y se cumplió, o predijo bajo y no se cumplió)
+  function rChk(predicted, cumple) {
+    if (cumple === undefined || cumple === null) return '';
+    const ok = predicted === cumple;
     return `<span class="pred-check ${ok ? 'ok' : 'fail'}">${ok ? '✓' : '✗'}</span>`;
   }
 
-  const hChecks = result ? [
-    chk(hXG.alto,  result.local.cumple_xg),
-    chk(hTir.alto, result.local.cumple_tiros),
-    chk(hGol.alto, result.local.cumple_goles),
-  ].join('') : '';
-
-  const aChecks = result ? [
-    chk(aXG.alto,  result.visitante.cumple_xg),
-    chk(aTir.alto, result.visitante.cumple_tiros),
-    chk(aGol.alto, result.visitante.cumple_goles),
-  ].join('') : '';
-
   // 3 barras apiladas
   const BARS = [
-    { label: 'xG ≥ 1.5',  key: 'xg'    },
-    { label: 'Tiros ≥ 5', key: 'tiros'  },
-    { label: 'Goles ≥ 2', key: 'goles'  },
+    { label: 'XG', threshold: '≥ 1.5', key: 'xg'    },
+    { label: 'GA', threshold: '≥ 2',   key: 'goles'  },
+    { label: 'TP', threshold: '≥ 5',   key: 'tiros'  },
   ];
 
   function barsHome(d) {
@@ -591,7 +579,10 @@ function buildPredCardHTML(m, data, result = null) {
       const m = d[b.key];
       return `
         <div class="pred-bar-row">
-          <span class="pred-bar-label">${b.label}</span>
+          <span class="pred-bar-label">
+            <span class="pbl-abbr">${b.label}</span>
+            <span class="pbl-thresh">${b.threshold}</span>
+          </span>
           <div class="pred-bar-track">
             <div class="pred-bar-fill ${m.alto ? 'p-high' : 'p-low'}" style="width:${m.probabilidad}%"></div>
           </div>
@@ -609,16 +600,19 @@ function buildPredCardHTML(m, data, result = null) {
           <div class="pred-bar-track away">
             <div class="pred-bar-fill ${m.alto ? 'p-high' : 'p-low'}" style="width:${m.probabilidad}%"></div>
           </div>
-          <span class="pred-bar-label">${b.label}</span>
+          <span class="pred-bar-label" style="text-align:right">
+            <span class="pbl-abbr">${b.label}</span>
+            <span class="pbl-thresh">${b.threshold}</span>
+          </span>
         </div>`;
     }).join('');
   }
 
   // Stats reales del partido
   const hReal = result
-    ? `<div class="pred-real">xG ${result.local.xg} · ${result.local.tiros_puerta} tiros · ${result.local.goles}G</div>` : '';
+    ? `<div class="pred-real">XG ${result.local.xg} ${rChk(hXG.alto, result.local.cumple_xg)} · GA ${result.local.goles} ${rChk(hGol.alto, result.local.cumple_goles)} · TP ${result.local.tiros_puerta} ${rChk(hTir.alto, result.local.cumple_tiros)}</div>` : '';
   const aReal = result
-    ? `<div class="pred-real away">xG ${result.visitante.xg} · ${result.visitante.tiros_puerta} tiros · ${result.visitante.goles}G</div>` : '';
+    ? `<div class="pred-real away">XG ${result.visitante.xg} ${rChk(aXG.alto, result.visitante.cumple_xg)} · GA ${result.visitante.goles} ${rChk(aGol.alto, result.visitante.cumple_goles)} · TP ${result.visitante.tiros_puerta} ${rChk(aTir.alto, result.visitante.cumple_tiros)}</div>` : '';
 
   const centerHtml = finished
     ? `<div class="pred-scorebox">${m.sh}<span>-</span>${m.sa}</div>
@@ -632,7 +626,6 @@ function buildPredCardHTML(m, data, result = null) {
         <img class="pred-logo" src="https://img.sofascore.com/api/v1/team/${m.homeId}/image"
              alt="${m.homeName}" onerror="this.style.opacity=0.15">
         <span class="pred-name">${m.homeName}</span>
-        <div class="pred-check-group">${hChecks}</div>
       </div>
       <div class="pred-bars-stack">${barsHome(data.local)}</div>
       ${hReal}
@@ -642,7 +635,6 @@ function buildPredCardHTML(m, data, result = null) {
 
     <div class="pred-team away">
       <div class="pred-team-head away">
-        <div class="pred-check-group">${aChecks}</div>
         <span class="pred-name">${m.awayName}</span>
         <img class="pred-logo" src="https://img.sofascore.com/api/v1/team/${m.awayId}/image"
              alt="${m.awayName}" onerror="this.style.opacity=0.15">
@@ -653,6 +645,91 @@ function buildPredCardHTML(m, data, result = null) {
 }
 
 // ── ESTADÍSTICAS TAB ──────────────────────────────────────────────────────
+let _statsData = null;
+let _statsSort = { col: 'xg_avg', dir: -1 }; // -1 = desc, 1 = asc
+
+function renderStatsTable() {
+  const content = document.getElementById('stats-table-content');
+  if (!content || !_statsData) return;
+
+  const data = _statsData;
+  const sorted = [...data].sort((a, b) => _statsSort.dir * (b[_statsSort.col] - a[_statsSort.col]));
+
+  const maxXG  = Math.max(...data.map(t => t.xg_avg));
+  const maxGol = Math.max(...data.map(t => t.goles_avg));
+  const maxTot = Math.max(...data.map(t => t.tiros_tot_avg));
+  const maxTir = Math.max(...data.map(t => t.tiros_avg));
+
+  const arr = col => {
+    if (_statsSort.col !== col) return `<span class="sort-arr">↕</span>`;
+    return _statsSort.dir === -1
+      ? `<span class="sort-arr on">↓</span>`
+      : `<span class="sort-arr on">↑</span>`;
+  };
+
+  const COLS = [
+    { key: 'xg_avg',        label: 'Goles Esperados' },
+    { key: 'goles_avg',     label: 'Goles'           },
+    { key: 'tiros_tot_avg', label: 'Tiros Totales'   },
+    { key: 'tiros_avg',     label: 'Tiros a Puerta'  },
+  ];
+
+  let html = `
+    <div class="stats-table-head">
+      <span>#</span>
+      <span>Equipo</span>
+      <span style="text-align:center">PJ</span>
+      ${COLS.map(c => `<span class="stats-sort-th" data-col="${c.key}">${c.label} ${arr(c.key)}</span>`).join('')}
+    </div>`;
+
+  sorted.forEach((team, i) => {
+    const id  = getTeamId(team.equipo);
+    const logo = id ? `https://img.sofascore.com/api/v1/team/${id}/image` : '';
+    const xgW  = ((team.xg_avg        / maxXG)  * 100).toFixed(0);
+    const golW = ((team.goles_avg      / maxGol) * 100).toFixed(0);
+    const totW = ((team.tiros_tot_avg  / maxTot) * 100).toFixed(0);
+    const tirW = ((team.tiros_avg      / maxTir) * 100).toFixed(0);
+
+    html += `
+      <div class="stats-row" style="animation-delay:${i * 0.03}s">
+        <span class="stats-rank">${i + 1}</span>
+        <div class="stats-team-cell">
+          ${logo ? `<img src="${logo}" alt="${team.equipo}" onerror="this.style.opacity=0.15">` : '<div style="width:22px;flex-shrink:0"></div>'}
+          <span>${team.equipo}</span>
+        </div>
+        <span class="stats-num-cell">${team.partidos}</span>
+        <div class="stats-bar-cell">
+          <div class="stats-bar-header"><span class="stats-val">${parseFloat(team.xg_avg).toFixed(2)}</span></div>
+          <div class="stats-mini-bar-track"><div class="stats-mini-bar-fill xg-bar" style="width:${xgW}%"></div></div>
+        </div>
+        <div class="stats-bar-cell">
+          <div class="stats-bar-header"><span class="stats-val">${parseFloat(team.goles_avg).toFixed(2)}</span></div>
+          <div class="stats-mini-bar-track"><div class="stats-mini-bar-fill goles-bar" style="width:${golW}%"></div></div>
+        </div>
+        <div class="stats-bar-cell">
+          <div class="stats-bar-header"><span class="stats-val">${parseFloat(team.tiros_tot_avg).toFixed(1)}</span></div>
+          <div class="stats-mini-bar-track"><div class="stats-mini-bar-fill tiros-tot-bar" style="width:${totW}%"></div></div>
+        </div>
+        <div class="stats-bar-cell">
+          <div class="stats-bar-header"><span class="stats-val">${parseFloat(team.tiros_avg).toFixed(1)}</span></div>
+          <div class="stats-mini-bar-track"><div class="stats-mini-bar-fill tiros-bar" style="width:${tirW}%"></div></div>
+        </div>
+      </div>`;
+  });
+
+  content.innerHTML = html;
+
+  content.querySelectorAll('.stats-sort-th').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.dataset.col;
+      _statsSort = _statsSort.col === col
+        ? { col, dir: _statsSort.dir * -1 }
+        : { col, dir: -1 };
+      renderStatsTable();
+    });
+  });
+}
+
 async function renderEstadisticasTab() {
   const tabEl = document.getElementById('tab-estadisticas');
   if (!tabEl) return;
@@ -669,93 +746,19 @@ async function renderEstadisticasTab() {
       </div>
     </div>`;
 
-  const content = document.getElementById('stats-table-content');
-
   try {
     const res = await fetch(`${API_URL}/team-rankings`);
     if (!res.ok) throw new Error();
-    const data = await res.json();
-
-    if (!data.length) {
-      content.innerHTML = '<div class="empty-tab">Sin datos disponibles</div>';
+    _statsData = await res.json();
+    if (!_statsData.length) {
+      document.getElementById('stats-table-content').innerHTML =
+        '<div class="empty-tab">Sin datos disponibles</div>';
       return;
     }
-
-    const maxXG    = Math.max(...data.map(t => t.xg_avg));
-    const maxTiros = Math.max(...data.map(t => t.tiros_avg));
-    const maxGoles = Math.max(...data.map(t => t.goles_avg));
-    const maxTot   = Math.max(...data.map(t => t.tiros_tot_avg));
-
-    let html = `
-      <div class="stats-table-head">
-        <span>#</span>
-        <span>Equipo</span>
-        <span style="text-align:center">PJ</span>
-        <span>Goles Esperados</span>
-        <span>Tiros a Puerta</span>
-        <span>Goles</span>
-        <span>Tiros Totales</span>
-      </div>`;
-
-    data.forEach((team, i) => {
-      const id   = getTeamId(team.equipo);
-      const logo = id ? `https://img.sofascore.com/api/v1/team/${id}/image` : '';
-      const xgW   = ((team.xg_avg       / maxXG)    * 100).toFixed(0);
-      const tirW  = ((team.tiros_avg    / maxTiros)  * 100).toFixed(0);
-      const golW  = ((team.goles_avg    / maxGoles)  * 100).toFixed(0);
-      const totW  = ((team.tiros_tot_avg / maxTot)   * 100).toFixed(0);
-      const xgHi  = team.xg_avg    >= 1.5;
-      const tirHi = team.tiros_avg >= 5;
-      const golHi = team.goles_avg >= 2;
-
-      html += `
-        <div class="stats-row" style="animation-delay:${i * 0.03}s">
-          <span class="stats-rank">${i + 1}</span>
-          <div class="stats-team-cell">
-            ${logo
-              ? `<img src="${logo}" alt="${team.equipo}" onerror="this.style.opacity=0.15">`
-              : '<div style="width:22px;flex-shrink:0"></div>'}
-            <span>${team.equipo}</span>
-          </div>
-          <span class="stats-num-cell">${team.partidos}</span>
-          <div class="stats-bar-cell">
-            <div class="stats-bar-header">
-              <span class="stats-val${xgHi ? ' stat-hi' : ''}">${parseFloat(team.xg_avg).toFixed(2)}</span>
-            </div>
-            <div class="stats-mini-bar-track">
-              <div class="stats-mini-bar-fill xg-bar" style="width:${xgW}%"></div>
-            </div>
-          </div>
-          <div class="stats-bar-cell">
-            <div class="stats-bar-header">
-              <span class="stats-val${tirHi ? ' stat-hi' : ''}">${parseFloat(team.tiros_avg).toFixed(1)}</span>
-            </div>
-            <div class="stats-mini-bar-track">
-              <div class="stats-mini-bar-fill tiros-bar" style="width:${tirW}%"></div>
-            </div>
-          </div>
-          <div class="stats-bar-cell">
-            <div class="stats-bar-header">
-              <span class="stats-val${golHi ? ' stat-hi' : ''}">${parseFloat(team.goles_avg).toFixed(2)}</span>
-            </div>
-            <div class="stats-mini-bar-track">
-              <div class="stats-mini-bar-fill goles-bar" style="width:${golW}%"></div>
-            </div>
-          </div>
-          <div class="stats-bar-cell">
-            <div class="stats-bar-header">
-              <span class="stats-val">${parseFloat(team.tiros_tot_avg).toFixed(1)}</span>
-            </div>
-            <div class="stats-mini-bar-track">
-              <div class="stats-mini-bar-fill tiros-tot-bar" style="width:${totW}%"></div>
-            </div>
-          </div>
-        </div>`;
-    });
-
-    content.innerHTML = html;
+    renderStatsTable();
   } catch (_) {
-    content.innerHTML = '<div class="empty-tab">No se pudo cargar las estadísticas</div>';
+    const c = document.getElementById('stats-table-content');
+    if (c) c.innerHTML = '<div class="empty-tab">No se pudo cargar las estadísticas</div>';
   }
 }
 
@@ -877,7 +880,7 @@ async function renderRendimientoTab() {
       <div class="rend-sub-nav">
         <div class="rend-sub-tabs">
           <button class="rend-sub-tab active" data-section="backtesting">Backtesting</button>
-          <button class="rend-sub-tab" data-section="comp">Comparación</button>
+          <button class="rend-sub-tab" data-section="comp">Comparación de Algoritmos</button>
         </div>
       </div>
       <div id="rend-tab-content">
@@ -912,17 +915,17 @@ async function renderRendimientoTab() {
       backHtml = `
         <div class="acc-summary">
           <div class="acc-card">
-            <span class="acc-card-label">xG ≥ 1.5</span>
+            <span class="acc-card-label">Goles Esperados ≥ 1.5</span>
             <span class="acc-card-value ${accColor(resumen.xg_accuracy)}">${resumen.xg_accuracy}%</span>
             <span class="acc-card-sub">Accuracy global</span>
           </div>
           <div class="acc-card">
-            <span class="acc-card-label">Tiros ≥ 5</span>
+            <span class="acc-card-label">Tiros a Puerta ≥ 5</span>
             <span class="acc-card-value ${accColor(resumen.tiros_accuracy)}">${resumen.tiros_accuracy}%</span>
             <span class="acc-card-sub">Accuracy global</span>
           </div>
           <div class="acc-card">
-            <span class="acc-card-label">Goles ≥ 2</span>
+            <span class="acc-card-label">Goles Anotados ≥ 2</span>
             <span class="acc-card-value ${accColor(resumen.goles_accuracy)}">${resumen.goles_accuracy}%</span>
             <span class="acc-card-sub">Accuracy global</span>
           </div>
@@ -933,9 +936,9 @@ async function renderRendimientoTab() {
             <span>Ronda</span>
             <span>Semana del</span>
             <span style="text-align:center">n</span>
-            <span>xG ≥ 1.5</span>
-            <span>Tiros ≥ 5</span>
-            <span>Goles ≥ 2</span>
+            <span>Goles Esperados ≥ 1.5</span>
+            <span>Tiros a Puerta ≥ 5</span>
+            <span>Goles Anotados ≥ 2</span>
           </div>
           ${rounds.map((r, i) => `
             <div class="rend-table-row" style="animation-delay:${i * 0.05}s">
@@ -954,10 +957,6 @@ async function renderRendimientoTab() {
     if (metricsData) {
       const varKeys = Object.keys(metricsData);
       compHtml = `
-        <div class="comp-header">
-          <span class="pred-tab-title">Comparación de Algoritmos</span>
-          <span class="pred-tab-sub">Test set — división temporal 80/20</span>
-        </div>
         <div class="comp-var-tabs" id="comp-var-tabs">
           ${varKeys.map((k, i) => `
             <button class="comp-var-tab${i === 0 ? ' active' : ''}" data-var="${k}">
