@@ -1365,7 +1365,7 @@ img { display: block; }
   border-bottom: 1px solid var(--border);
   font-size: 12px;
   font-family: 'DM Mono', monospace;
-  color: var(--text2);
+  color: var(--text);
   transition: background 0.15s;
   animation: fadeIn 0.2s ease both;
 }
