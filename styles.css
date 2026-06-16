@@ -1415,3 +1415,121 @@ img { display: block; }
   color: var(--text3);
 }
 
+/* ── RESPONSIVE MÓVIL ───────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+
+  /* Page: permite scroll vertical en vez de altura fija */
+  .page-wrap {
+    height: auto;
+    overflow: visible;
+  }
+
+  /* Header más compacto */
+  .header-wrap {
+    padding: 8px 12px 0;
+  }
+  .header {
+    padding: 10px 14px;
+    gap: 12px;
+  }
+  .header-logo-wrap { width: 52px; }
+  .header-logo { width: 44px; height: 44px; }
+  .header-info h1 { font-size: 18px; }
+  .progress-wrap { display: none; }
+
+  /* Layout: columna única */
+  .layout {
+    grid-template-columns: 1fr;
+    padding: 8px 12px 12px;
+    overflow: visible;
+    gap: 8px;
+  }
+
+  /* Panel izquierdo: altura limitada con scroll */
+  .left-panel {
+    max-height: 420px;
+    overflow-y: auto;
+  }
+
+  /* Panel derecho: altura automática */
+  .right-panel {
+    overflow-y: visible;
+    min-height: 500px;
+  }
+
+  /* Tabs principales más pequeñas */
+  .main-tab {
+    font-size: 11px;
+    padding: 10px 4px;
+  }
+
+  /* Tabla de clasificaciones: scroll horizontal */
+  .table-wrap {
+    overflow-x: auto;
+  }
+  .table-head, .standings-row {
+    min-width: 520px;
+  }
+
+  /* Leyenda de columnas en columna */
+  .col-legend {
+    flex-wrap: wrap;
+    gap: 4px 10px;
+  }
+
+  /* Predicciones: cards en columna */
+  .pred-card {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .pred-team {
+    width: 100%;
+  }
+  .pred-center {
+    order: -1;
+    padding: 6px 0;
+  }
+
+  /* Estadísticas: scroll horizontal */
+  .stats-tab-wrap {
+    overflow-x: auto;
+  }
+
+  /* Backtesting: cards en columna */
+  .acc-summary {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .acc-card {
+    width: 100%;
+  }
+
+  /* Tabla backtesting: scroll horizontal */
+  .rend-table-wrap {
+    overflow-x: auto;
+  }
+  .rend-table-head,
+  .rend-table-row {
+    min-width: 480px;
+  }
+
+  /* Sub-tabs rendimiento */
+  .rend-sub-tabs {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .rend-sub-tab {
+    font-size: 11px;
+    padding: 6px 10px;
+  }
+
+  /* Comparación var-tabs */
+  .comp-var-tabs {
+    flex-wrap: wrap;
+  }
+  .comp-var-tab {
+    font-size: 11px;
+    padding: 5px 10px;
+  }
+}
+
