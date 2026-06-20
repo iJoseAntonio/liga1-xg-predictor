@@ -331,7 +331,7 @@ def root(request: Request):
     }
 
 
-@app.get("/health")
+@app.api_route("/health", methods=["GET", "HEAD"])
 @limiter.limit("60/minute")
 def health(request: Request):
     return {
