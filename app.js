@@ -188,7 +188,15 @@ function loadMatchesCSV() {
 
       const rounds = Object.keys(MATCHES).map(Number);
       ROUND_MAX    = Math.max(...rounds);
+
+      // Por defecto: la última ronda con al menos un partido ya finalizado
       currentRound = ROUND_MAX;
+      for (let r = ROUND_MAX; r >= ROUND_MIN; r--) {
+        if (MATCHES[r] && MATCHES[r].some(m => m.sh !== null)) {
+          currentRound = r;
+          break;
+        }
+      }
 
       buildRoundSelect();
       renderMatches(currentRound);
@@ -314,13 +322,6 @@ function renderMatches(round) {
          </div>`
       : `<div style="min-width:16px"></div>`;
 
-    // Slot de predicción (solo para partidos no jugados)
-    const predSlot = !finished
-      ? `<div class="match-pred" id="pred-${round}-${i}">
-           <span class="pred-loading">···</span>
-         </div>`
-      : '';
-
     html += `
     <div class="match-row" style="animation-delay:${i * 0.04}s">
       <div class="match-time-cell">
@@ -332,13 +333,11 @@ function renderMatches(round) {
           <img src="https://img.sofascore.com/api/v1/team/${m.homeId}/image/small"
                alt="${m.homeName}" onerror="this.style.opacity=0.15">
           <span class="match-team-name ${homeWin ? 'winner' : ''}">${m.homeName}</span>
-          ${!finished ? `<span class="pred-badge home" id="pred-h-${round}-${i}"></span>` : ''}
         </div>
         <div class="match-team-row">
           <img src="https://img.sofascore.com/api/v1/team/${m.awayId}/image/small"
                alt="${m.awayName}" onerror="this.style.opacity=0.15">
           <span class="match-team-name ${awayWin ? 'winner' : ''}">${m.awayName}</span>
-          ${!finished ? `<span class="pred-badge away" id="pred-a-${round}-${i}"></span>` : ''}
         </div>
       </div>
       ${scoreHtml}
@@ -350,9 +349,6 @@ function renderMatches(round) {
   });
 
   el.innerHTML = html || '<div style="padding:20px;text-align:center;color:var(--text3);font-size:12px">Sin partidos para esta jornada</div>';
-
-  // Lanzar predicciones para partidos pendientes
-  fetchPredictions(round, matches);
 }
 
 // ── PREDICCIONES API ──────────────────────────────────────────────────────
@@ -385,32 +381,6 @@ async function getPrediction(m) {
     predCache[key] = data;
     return data;
   } catch (_) { return null; }
-}
-
-async function fetchPredictions(round, matches) {
-  const unplayed = matches
-    .map((m, i) => ({ ...m, idx: i }))
-    .filter(m => m.sh === null);
-  if (!unplayed.length) return;
-  for (const m of unplayed) {
-    const data = await getPrediction(m);
-    if (data) applyPrediction(round, m.idx, data);
-  }
-}
-
-function applyPrediction(round, idx, data) {
-  // Usa xG como indicador principal en el panel de partidos
-  const hp = data.local.xg.probabilidad;
-  const ap = data.visitante.xg.probabilidad;
-
-  const elH = document.getElementById(`pred-h-${round}-${idx}`);
-  const elA = document.getElementById(`pred-a-${round}-${idx}`);
-  if (!elH || !elA) return;
-
-  elH.textContent = `${hp}%`;
-  elH.className   = `pred-badge home ${hp >= 60 ? 'pred-high' : 'pred-low'}`;
-  elA.textContent = `${ap}%`;
-  elA.className   = `pred-badge away ${ap >= 60 ? 'pred-high' : 'pred-low'}`;
 }
 
 // ── ROUND SELECT ──────────────────────────────────────────────────────────

@@ -228,7 +228,7 @@ img { display: block; }
 }
 .match-upcoming-label {
   font-size: 10px;
-  color: var(--text3);
+  color: var(--text);
   margin-top: 4px;
 }
 .match-no-data {
@@ -871,7 +871,7 @@ img { display: block; }
   color: var(--text);
 }
 .pred-scorebox span { color: var(--text); font-size: 14px; }
-.pred-matchdate { font-size: 10px; color: var(--text3); }
+.pred-matchdate { font-size: 10px; color: var(--text); }
 
 /* Stats reales del partido */
 .pred-real {
