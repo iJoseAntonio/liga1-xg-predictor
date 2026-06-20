@@ -110,13 +110,21 @@ def cargar_recursos():
     _precompute_performance()
 
 
-def compute_team_stats(team_name: str, is_local: int) -> dict | None:
-    """Calcula rolling features (últimos 3 y 5 partidos) para los 3 modelos."""
+def compute_team_stats(team_name: str, is_local: int, as_of_date: pd.Timestamp | None = None) -> dict | None:
+    """Calcula rolling features (últimos 3 y 5 partidos) para los 3 modelos.
+
+    as_of_date: si se pasa, solo usa partidos estrictamente anteriores a esa fecha
+    (evita que un partido ya jugado se beneficie de partidos posteriores).
+    """
     if df_historico is None or df_historico.empty:
         return None
 
+    df_fuente = df_historico
+    if as_of_date is not None:
+        df_fuente = df_historico[df_historico['fecha'] < as_of_date]
+
     rows = []
-    for _, m in df_historico.iterrows():
+    for _, m in df_fuente.iterrows():
         if m.get('equipo_local') == team_name:
             suffix = '_local'
         elif m.get('equipo_visitante') == team_name:
@@ -345,18 +353,25 @@ def predict_match(
     request: Request,
     home: str = Query(..., description="Nombre del equipo local"),
     away: str = Query(..., description="Nombre del equipo visitante"),
+    fecha: str | None = Query(None, description="Fecha del partido DD/MM/YYYY (evita usar datos de partidos posteriores)"),
 ):
     """
     Predice xG>=1.5, tiros>4 y goles>=2 para ambos equipos.
-    Ejemplo: /predict-match?home=Universitario&away=Alianza Lima
+    Ejemplo: /predict-match?home=Universitario&away=Alianza Lima&fecha=02/05/2026
     """
     if any(m is None for m in [modelo_xg, modelo_tiros, modelo_goles]):
         raise HTTPException(status_code=503, detail="Modelos no disponibles")
     if df_historico is None:
         raise HTTPException(status_code=503, detail="Datos históricos no disponibles")
 
-    home_stats = compute_team_stats(home, is_local=1)
-    away_stats = compute_team_stats(away, is_local=0)
+    as_of = None
+    if fecha:
+        parsed = pd.to_datetime(fecha, format='%d/%m/%Y', errors='coerce')
+        if pd.notna(parsed):
+            as_of = parsed
+
+    home_stats = compute_team_stats(home, is_local=1, as_of_date=as_of)
+    away_stats = compute_team_stats(away, is_local=0, as_of_date=as_of)
 
     if home_stats is None:
         raise HTTPException(status_code=404, detail=f"Sin datos históricos para: {home}")

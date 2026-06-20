@@ -94,16 +94,34 @@ function formBox(letter) {
 }
 
 // ── MATCHES CSV LOADER ────────────────────────────────────────────────────
+function normalizeDate(dateStr) {
+  // Acepta "19/7/26" o "31/05/2026" → siempre devuelve "DD/MM/YYYY"
+  const parts = (dateStr || '').trim().split('/');
+  if (parts.length !== 3) return (dateStr || '').trim();
+  let [d, m, y] = parts;
+  d = d.padStart(2, '0');
+  m = m.padStart(2, '0');
+  if (y.length === 2) y = '20' + y;
+  return `${d}/${m}/${y}`;
+}
+
 function parseMatchDate(dateStr) {
-  const [d, m, y] = (dateStr || '').split('/');
+  const [d, m, y] = normalizeDate(dateStr).split('/');
   return new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
 }
 
 function formatMatchDate(dateStr) {
   // "31/05/2026" → "31/5/26"
-  const [d, m, y] = dateStr.split('/');
+  const [d, m, y] = normalizeDate(dateStr).split('/');
   return `${parseInt(d)}/${parseInt(m)}/${y.slice(2)}`;
 }
+
+function isEmptyScore(v) {
+  const s = (v ?? '').toString().trim().toUpperCase();
+  return s === '' || s === 'N/A';
+}
+
+let ROUND_META = {};   // globalRound -> { stage, displayNum }
 
 function loadMatchesCSV() {
   Papa.parse(MATCHES_CSV_PATH, {
@@ -114,40 +132,50 @@ function loadMatchesCSV() {
     complete: (results) => {
       if (!results.data || results.data.length === 0) return;
 
-      const grouped = {};
+      // Agrupar por etapa + número de jornada (ej. "Apertura 17", "Clausura 1")
+      const groups = {};
       results.data.forEach(row => {
         const jornada = (row['Jornada'] || '').trim();
-        const m = jornada.match(/Apertura\s+(\d+)/i);
+        const m = jornada.match(/^(.*?)\s+(\d+)$/);
         if (!m) return;
-        const roundNum = parseInt(m[1]);
-        if (!grouped[roundNum]) grouped[roundNum] = [];
-        grouped[roundNum].push(row);
+        const stage = m[1].trim();
+        const num   = parseInt(m[2]);
+        const key   = `${stage}|${num}`;
+        if (!groups[key]) groups[key] = { stage, num, rows: [] };
+        groups[key].rows.push(row);
       });
 
-      // Sort each round's matches by date ascending
-      Object.values(grouped).forEach(arr =>
-        arr.sort((a, b) => parseMatchDate(a.fecha) - parseMatchDate(b.fecha))
-      );
+      // Ordenar partidos dentro de cada grupo y hallar su fecha mínima
+      Object.values(groups).forEach(g => {
+        g.rows.sort((a, b) => parseMatchDate(a.fecha) - parseMatchDate(b.fecha));
+        g.minDate = parseMatchDate(g.rows[0].fecha);
+      });
 
-      MATCHES = {};
-      Object.keys(grouped).forEach(r => {
-        const roundNum = parseInt(r);
-        let prevDate = null;
-        MATCHES[roundNum] = grouped[r].map(row => {
-          const rawDate  = (row['fecha'] || '').trim();
+      // Ordenar los grupos cronológicamente → numeración global secuencial
+      const orderedGroups = Object.values(groups).sort((a, b) => a.minDate - b.minDate);
+
+      MATCHES    = {};
+      ROUND_META = {};
+      orderedGroups.forEach((g, idx) => {
+        const globalRound = idx + 1;
+        ROUND_META[globalRound] = { stage: g.stage, displayNum: g.num };
+        MATCHES[globalRound] = g.rows.map(row => {
+          const rawDate  = normalizeDate(row['fecha']);
           const display  = rawDate ? formatMatchDate(rawDate) : '';
-          if (rawDate) prevDate = rawDate;
 
           const homeName  = (row['equipo_local']    || '').trim();
           const awayName  = (row['equipo_visitante'] || '').trim();
           const gl        = row['goles_local'];
           const gv        = row['goles_visitante'];
-          const hasScore  = gl !== '' && gl !== undefined &&
-                            gv !== '' && gv !== undefined;
+          const hasScore  = !isEmptyScore(gl) && !isEmptyScore(gv);
+
+          const horaRaw   = (row['Hora'] || '').trim();
+          const horaVal   = (!horaRaw || horaRaw.toLowerCase() === 'no') ? null : horaRaw;
 
           return {
             date:     display,
-            hour:     hasScore ? 'FT' : null,
+            rawDate:  rawDate,
+            hour:     hasScore ? 'FT' : horaVal,
             homeId:   getTeamId(homeName),
             homeName,
             awayId:   getTeamId(awayName),
@@ -276,7 +304,7 @@ function renderMatches(round) {
     const statusHtml = m.hour === 'FT'
       ? `<span class="match-ft">FT</span>`
       : m.hour
-        ? `<span class="match-hour">${m.hour}</span>`
+        ? `<span class="match-date">${m.hour}</span>`
         : `<span class="match-hour"></span>`;
 
     const scoreHtml = finished
@@ -344,12 +372,13 @@ async function getMatchResult(m) {
 }
 
 async function getPrediction(m) {
-  const key = `${m.homeName}|${m.awayName}`;
+  const key = `${m.homeName}|${m.awayName}|${m.rawDate || ''}`;
   if (predCache[key]) return predCache[key];
   try {
     const url = `${API_URL}/predict-match` +
       `?home=${encodeURIComponent(m.homeName)}` +
-      `&away=${encodeURIComponent(m.awayName)}`;
+      `&away=${encodeURIComponent(m.awayName)}` +
+      (m.rawDate ? `&fecha=${encodeURIComponent(m.rawDate)}` : '');
     const res = await fetch(url);
     if (!res.ok) return null;
     const data = await res.json();
@@ -386,22 +415,35 @@ function applyPrediction(round, idx, data) {
 
 // ── ROUND SELECT ──────────────────────────────────────────────────────────
 function buildRoundSelect() {
-  const sel = $roundSelect();
+  const sel   = $roundSelect();
+  const stage = (ROUND_META[currentRound] || {}).stage || '';
+
   sel.innerHTML = '';
-  for (let r = ROUND_MAX; r >= ROUND_MIN; r--) {
-    const opt = document.createElement('option');
-    opt.value = r;
-    opt.textContent = `Apertura Ronda ${r}`;
-    if (r === currentRound) opt.selected = true;
-    sel.appendChild(opt);
-  }
+  Object.keys(ROUND_META)
+    .map(Number)
+    .filter(r => ROUND_META[r].stage === stage)
+    .sort((a, b) => b - a)   // más reciente primero
+    .forEach(r => {
+      const opt = document.createElement('option');
+      opt.value = r;
+      opt.textContent = `${stage} Ronda ${ROUND_META[r].displayNum}`;
+      if (r === currentRound) opt.selected = true;
+      sel.appendChild(opt);
+    });
+
+  updateStageHeader(stage);
+}
+
+function updateStageHeader(stage) {
+  const headerEl = document.querySelector('.match-group-header span');
+  if (headerEl && stage) headerEl.textContent = `Liga 1, ${stage}`;
 }
 
 function changeRound(dir) {
   const next = currentRound + dir;
   if (next < ROUND_MIN || next > ROUND_MAX) return;
   currentRound = next;
-  $roundSelect().value = currentRound;
+  buildRoundSelect();   // por si el cambio cruza a otra etapa (Apertura ↔ Clausura)
   renderMatches(currentRound);
   renderDestacado(currentRound);
   if (isPredTabActive()) renderPredictionsTab(currentRound);
@@ -518,7 +560,8 @@ async function renderPredictionsTab(round) {
   const titleEl = document.getElementById('pred-tab-round');
   if (!container) return;
 
-  if (titleEl) titleEl.textContent = `Apertura — Jornada ${round}`;
+  const meta = ROUND_META[round] || {};
+  if (titleEl) titleEl.textContent = `${meta.stage || 'Liga 1'} — Jornada ${meta.displayNum ?? round}`;
 
   const matches = MATCHES[round] || [];
   if (!matches.length) {
