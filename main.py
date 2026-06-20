@@ -197,14 +197,14 @@ def _compute_stats_df(team_name: str, is_local: int, df_sub: pd.DataFrame) -> di
             suffix = '_visitante'
         else:
             continue
-        row = {}
+        row = {'fecha': m['fecha']}
         for col in COLS_STATS_CSV:
             val = m.get(f'{col}{suffix}', 0)
             row[col] = pd.to_numeric(val, errors='coerce') or 0.0
         rows.append(row)
     if not rows:
         return None
-    df_t = pd.DataFrame(rows)
+    df_t = pd.DataFrame(rows).sort_values('fecha').reset_index(drop=True)
     df_t['precision_pases'] = (
         df_t['Pases precisos'] / df_t['Pases'].replace(0, np.nan)
     ).fillna(0)
