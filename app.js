@@ -777,6 +777,7 @@ async function renderEstadisticasTab() {
 
 // ── RENDIMIENTO TAB — helpers ─────────────────────────────────────────────
 let _radarChart = null;
+let _shapChart  = null;
 
 const MODEL_COLORS = {
   'XGBoost':             '#a78bfa',
@@ -883,6 +884,65 @@ function renderCompChart(varKey, metricsData) {
   }).join('');
 }
 
+// ── SHAP helpers ───────────────────────────────────────────────────────────
+function formatShapVar(name) {
+  return name
+    .replace(/_prom_3$/, ' · p3')
+    .replace(/_prom_5$/, ' · p5')
+    .replace(/Goles esperados \(xG\)/g, 'xG');
+}
+
+function renderShapChart(target, shapData) {
+  if (_shapChart) { _shapChart.destroy(); _shapChart = null; }
+  const canvas = document.getElementById('shap-bar-chart');
+  if (!canvas || !shapData || !shapData[target]) return;
+
+  const items  = [...shapData[target]].reverse();
+  const labels = items.map(d => formatShapVar(d.variable));
+  const values = items.map(d => d.importancia);
+  const colors = items.map(d =>
+    d.direccion > 0.001  ? 'rgba(21,177,104,0.78)'  :
+    d.direccion < -0.001 ? 'rgba(226,75,74,0.78)'   :
+                           'rgba(150,150,150,0.55)'
+  );
+
+  _shapChart = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        data: values,
+        backgroundColor: colors,
+        borderRadius: 4,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: { label: ctx => ` ${ctx.raw.toFixed(5)}  mean |SHAP|` }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(255,255,255,0.05)' },
+          ticks: { color: '#aaa', font: { size: 10 }, maxTicksLimit: 6 },
+          border: { color: '#333' },
+        },
+        y: {
+          grid: { display: false },
+          ticks: { color: '#f0f0f0', font: { size: 11 }, autoSkip: false },
+          border: { color: '#333' },
+        }
+      }
+    }
+  });
+}
+
 // ── RENDIMIENTO TAB ────────────────────────────────────────────────────────
 async function renderRendimientoTab() {
   const tabEl = document.getElementById('tab-rendimiento');
@@ -894,6 +954,7 @@ async function renderRendimientoTab() {
         <div class="rend-sub-tabs">
           <button class="rend-sub-tab active" data-section="backtesting">Backtesting</button>
           <button class="rend-sub-tab" data-section="comp">Comparación de Algoritmos</button>
+          <button class="rend-sub-tab" data-section="shap">Importancia de Variables</button>
         </div>
       </div>
       <div id="rend-tab-content">
@@ -904,14 +965,16 @@ async function renderRendimientoTab() {
   const content = document.getElementById('rend-tab-content');
 
   try {
-    const [perfRes, metricsRes] = await Promise.all([
+    const [perfRes, metricsRes, shapRes] = await Promise.all([
       fetch(`${API_URL}/model-performance`),
       fetch(`${API_URL}/model-metrics`),
+      fetch(`${API_URL}/shap-values`),
     ]);
 
     if (!perfRes.ok) throw new Error();
     const perfData    = await perfRes.json();
     const metricsData = metricsRes.ok ? await metricsRes.json() : null;
+    const shapData    = shapRes.ok    ? await shapRes.json()    : null;
 
     function accColor(pct) {
       return pct >= 70 ? 'acc-green' : pct >= 50 ? 'acc-yellow' : 'acc-red';
@@ -998,9 +1061,36 @@ async function renderRendimientoTab() {
         Sin datos de comparación disponibles.</div>`;
     }
 
+    // ── Sección Importancia de Variables (SHAP) ──────────────────────────
+    let shapHtml = '';
+    if (shapData) {
+      const shapTargets = { xg: 'xG ≥ 1.5', tiros: 'Tiros > 4', goles: 'Goles ≥ 2' };
+      shapHtml = `
+        <div class="comp-header">
+          <span class="stats-tab-title">Importancia de Variables</span>
+          <span class="stats-tab-sub">XGBoost · mean |SHAP value| · Top 15</span>
+        </div>
+        <div class="comp-var-tabs" id="shap-var-tabs">
+          ${Object.entries(shapTargets).map(([k, label], i) => `
+            <button class="shap-var-tab${i === 0 ? ' active' : ''}" data-shap="${k}">${label}</button>
+          `).join('')}
+        </div>
+        <div class="shap-chart-wrap">
+          <canvas id="shap-bar-chart"></canvas>
+        </div>
+        <div class="shap-legend">
+          <span class="shap-leg-pos">▬ Aumenta probabilidad</span>
+          <span class="shap-leg-neg">▬ Disminuye probabilidad</span>
+        </div>`;
+    } else {
+      shapHtml = `<div style="padding:40px;color:var(--text3);font-size:13px;text-align:center">
+        Sin datos SHAP disponibles.</div>`;
+    }
+
     content.innerHTML = `
       <div id="rend-section-backtesting" class="rend-section">${backHtml}</div>
-      <div id="rend-section-comp"        class="rend-section comp-section" style="display:none">${compHtml}</div>`;
+      <div id="rend-section-comp"        class="rend-section comp-section" style="display:none">${compHtml}</div>
+      <div id="rend-section-shap"        class="rend-section shap-section" style="display:none">${shapHtml}</div>`;
 
     // Sub-tab switching
     document.querySelectorAll('.rend-sub-tab').forEach(btn => {
@@ -1011,9 +1101,12 @@ async function renderRendimientoTab() {
         document.querySelectorAll('.rend-section').forEach(s => {
           s.style.display = s.id === `rend-section-${target}` ? '' : 'none';
         });
-        // Lazy-init: chart solo cuando el canvas es visible
+        // Lazy-init: charts solo cuando el canvas es visible
         if (target === 'comp' && metricsData && !_radarChart) {
           renderCompChart(Object.keys(metricsData)[0] || 'xg', metricsData);
+        }
+        if (target === 'shap' && shapData && !_shapChart) {
+          renderShapChart('xg', shapData);
         }
       });
     });
@@ -1025,6 +1118,17 @@ async function renderRendimientoTab() {
           document.querySelectorAll('.comp-var-tab').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
           renderCompChart(btn.dataset.var, metricsData);
+        });
+      });
+    }
+
+    // Target tabs dentro de Importancia de Variables
+    if (shapData) {
+      document.querySelectorAll('.shap-var-tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.shap-var-tab').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          renderShapChart(btn.dataset.shap, shapData);
         });
       });
     }
