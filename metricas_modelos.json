@@ -2,28 +2,112 @@
   "xg": {
     "label": "Goles Esperados ≥ 1.5",
     "modelos": [
-      {"nombre": "XGBoost",             "accuracy": 0.6777, "auc_roc": 0.6491, "f1": 0.531,  "precision": 0.5746, "recall": 0.4936},
-      {"nombre": "LightGBM",            "accuracy": 0.6872, "auc_roc": 0.6346, "f1": 0.5075, "precision": 0.6071, "recall": 0.4359},
-      {"nombre": "Random Forest",       "accuracy": 0.6564, "auc_roc": 0.6287, "f1": 0.5085, "precision": 0.5396, "recall": 0.4808},
-      {"nombre": "Logistic Regression", "accuracy": 0.6469, "auc_roc": 0.6791, "f1": 0.5918, "precision": 0.5167, "recall": 0.6923}
+      {
+        "nombre": "XGBoost",
+        "accuracy": 0.6564,
+        "auc_roc": 0.6538,
+        "f1": 0.5338,
+        "precision": 0.5355,
+        "recall": 0.5321
+      },
+      {
+        "nombre": "LightGBM",
+        "accuracy": 0.6517,
+        "auc_roc": 0.6604,
+        "f1": 0.5505,
+        "precision": 0.5263,
+        "recall": 0.5769
+      },
+      {
+        "nombre": "Random Forest",
+        "accuracy": 0.6256,
+        "auc_roc": 0.631,
+        "f1": 0.538,
+        "precision": 0.4946,
+        "recall": 0.5897
+      },
+      {
+        "nombre": "Logistic Regression",
+        "accuracy": 0.6327,
+        "auc_roc": 0.6655,
+        "f1": 0.5481,
+        "precision": 0.5027,
+        "recall": 0.6026
+      }
     ]
   },
   "tiros": {
     "label": "Tiros a Puerta ≥ 5",
     "modelos": [
-      {"nombre": "XGBoost",             "accuracy": 0.6422, "auc_roc": 0.6511, "f1": 0.5698, "precision": 0.5556, "recall": 0.5848},
-      {"nombre": "LightGBM",            "accuracy": 0.6564, "auc_roc": 0.6418, "f1": 0.5845, "precision": 0.573,  "recall": 0.5965},
-      {"nombre": "Random Forest",       "accuracy": 0.6303, "auc_roc": 0.6289, "f1": 0.5491, "precision": 0.5429, "recall": 0.5556},
-      {"nombre": "Logistic Regression", "accuracy": 0.609,  "auc_roc": 0.6434, "f1": 0.5692, "precision": 0.5142, "recall": 0.6374}
+      {
+        "nombre": "XGBoost",
+        "accuracy": 0.6517,
+        "auc_roc": 0.6303,
+        "f1": 0.5421,
+        "precision": 0.58,
+        "recall": 0.5088
+      },
+      {
+        "nombre": "LightGBM",
+        "accuracy": 0.6327,
+        "auc_roc": 0.6212,
+        "f1": 0.5455,
+        "precision": 0.5471,
+        "recall": 0.5439
+      },
+      {
+        "nombre": "Random Forest",
+        "accuracy": 0.6114,
+        "auc_roc": 0.6249,
+        "f1": 0.5233,
+        "precision": 0.5202,
+        "recall": 0.5263
+      },
+      {
+        "nombre": "Logistic Regression",
+        "accuracy": 0.6161,
+        "auc_roc": 0.644,
+        "f1": 0.5345,
+        "precision": 0.5254,
+        "recall": 0.5439
+      }
     ]
   },
   "goles": {
     "label": "Goles Anotados ≥ 2",
     "modelos": [
-      {"nombre": "XGBoost",             "accuracy": 0.6303, "auc_roc": 0.5911, "f1": 0.4265, "precision": 0.5524, "recall": 0.3473},
-      {"nombre": "LightGBM",            "accuracy": 0.6469, "auc_roc": 0.6131, "f1": 0.4419, "precision": 0.59,   "recall": 0.3533},
-      {"nombre": "Random Forest",       "accuracy": 0.6185, "auc_roc": 0.6056, "f1": 0.439,  "precision": 0.525,  "recall": 0.3772},
-      {"nombre": "Logistic Regression", "accuracy": 0.5924, "auc_roc": 0.6452, "f1": 0.5497, "precision": 0.4884, "recall": 0.6287}
+      {
+        "nombre": "XGBoost",
+        "accuracy": 0.6209,
+        "auc_roc": 0.5688,
+        "f1": 0.375,
+        "precision": 0.5393,
+        "recall": 0.2874
+      },
+      {
+        "nombre": "LightGBM",
+        "accuracy": 0.6114,
+        "auc_roc": 0.5625,
+        "f1": 0.3835,
+        "precision": 0.5152,
+        "recall": 0.3054
+      },
+      {
+        "nombre": "Random Forest",
+        "accuracy": 0.5711,
+        "auc_roc": 0.5694,
+        "f1": 0.493,
+        "precision": 0.4632,
+        "recall": 0.5269
+      },
+      {
+        "nombre": "Logistic Regression",
+        "accuracy": 0.6303,
+        "auc_roc": 0.647,
+        "f1": 0.5357,
+        "precision": 0.5325,
+        "recall": 0.5389
+      }
     ]
   }
 }
