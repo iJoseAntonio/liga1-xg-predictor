@@ -939,11 +939,11 @@ function renderShapChart(target, shapData) {
 
   const labels = sorted.map(d => formatShapVar(d.variable));
   const values = sorted.map(d => d.importancia);
-  const colors = sorted.map(d =>
-    d.direccion > 0.005  ? 'rgba(21,177,104,0.78)'  :
-    d.direccion < -0.005 ? 'rgba(226,75,74,0.78)'   :
-                           'rgba(150,150,150,0.55)'
-  );
+  const colors = sorted.map(d => {
+    const ratio = d.importancia > 0 ? Math.abs(d.direccion) / d.importancia : 0;
+    if (ratio < 0.10) return 'rgba(56,189,248,0.72)';
+    return d.direccion > 0 ? 'rgba(21,177,104,0.78)' : 'rgba(226,75,74,0.78)';
+  });
 
   _shapChart = new Chart(canvas, {
     type: 'bar',
@@ -968,14 +968,14 @@ function renderShapChart(target, shapData) {
       },
       scales: {
         x: {
-          grid: { color: 'rgba(255,255,255,0.05)' },
-          ticks: { color: '#aaa', font: { size: 10 }, maxTicksLimit: 6 },
-          border: { color: '#333' },
+          grid: { color: 'rgba(255,255,255,0.1)' },
+          ticks: { color: '#f0f0f0', font: { size: 10 }, maxTicksLimit: 6 },
+          border: { color: 'rgba(255,255,255,0.3)' },
         },
         y: {
           grid: { display: false },
           ticks: { color: '#f0f0f0', font: { size: 11 }, autoSkip: false },
-          border: { color: '#333' },
+          border: { color: 'rgba(255,255,255,0.3)' },
         }
       }
     }
@@ -1113,7 +1113,7 @@ async function renderRendimientoTab() {
         goles: 'Goles Anotados ≥ 2',
       };
       shapHtml = `
-        <div class="shap-controls">
+        <div class="shap-header-row">
           <div class="comp-var-tabs" id="shap-var-tabs">
             ${Object.entries(shapTargets).map(([k, label], i) => `
               <button class="shap-var-tab${i === 0 ? ' active' : ''}" data-shap="${k}">${label}</button>
@@ -1121,14 +1121,17 @@ async function renderRendimientoTab() {
           </div>
           <button class="shap-sort-btn" id="shap-sort-btn">↓ Desc</button>
         </div>
-        <div class="shap-chart-wrap">
-          <canvas id="shap-bar-chart"></canvas>
-        </div>
-        <div class="shap-legend">
-          <span class="shap-leg-pos">▬ Aumenta probabilidad</span>
-          <span class="shap-leg-neg">▬ Disminuye probabilidad</span>
-          <span class="shap-leg-neutral">▬ Efecto neutro</span>
-          <span class="shap-leg-abbr">· prom. 3 = promedio últimos 3 partidos · prom. 5 = promedio últimos 5 partidos</span>
+        <div class="comp-content">
+          <p class="shap-chart-title">Top 15 Variables más Influyentes · Valor SHAP Promedio</p>
+          <div class="shap-chart-wrap">
+            <canvas id="shap-bar-chart"></canvas>
+          </div>
+          <div class="shap-legend">
+            <span class="shap-leg-pos">▬ Aumenta probabilidad</span>
+            <span class="shap-leg-neg">▬ Disminuye probabilidad</span>
+            <span class="shap-leg-neutral">▬ Efecto neutro</span>
+            <span class="shap-leg-abbr"><span class="shap-abbr-key">prom. 3</span> = promedio últimos 3 partidos &nbsp;·&nbsp; <span class="shap-abbr-key">prom. 5</span> = promedio últimos 5 partidos</span>
+          </div>
         </div>`;
     } else {
       shapHtml = `<div style="padding:40px;color:var(--text3);font-size:13px;text-align:center">
@@ -1138,7 +1141,7 @@ async function renderRendimientoTab() {
     content.innerHTML = `
       <div id="rend-section-backtesting" class="rend-section">${backHtml}</div>
       <div id="rend-section-comp"        class="rend-section comp-section" style="display:none">${compHtml}</div>
-      <div id="rend-section-shap"        class="rend-section shap-section" style="display:none">${shapHtml}</div>`;
+      <div id="rend-section-shap"        class="rend-section comp-section" style="display:none">${shapHtml}</div>`;
 
     // Sub-tab switching
     document.querySelectorAll('.rend-sub-tab').forEach(btn => {

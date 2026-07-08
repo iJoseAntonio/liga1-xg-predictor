@@ -1416,18 +1416,6 @@ img { display: block; }
 }
 
 /* ── IMPORTANCIA DE VARIABLES (SHAP) ─────────────────────────────────────── */
-.shap-section {
-  padding: 0 16px 28px;
-}
-
-.shap-controls {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 16px;
-  margin-bottom: 18px;
-}
-
 .shap-var-tab {
   padding: 5px 16px;
   border: none;
@@ -1445,6 +1433,27 @@ img { display: block; }
   color: var(--text);
 }
 
+.shap-header-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  margin-bottom: 18px;
+}
+.shap-header-row .comp-var-tabs {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.shap-chart-title {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 12px;
+  letter-spacing: 0.2px;
+}
+
 .shap-sort-btn {
   background: var(--surface3);
   border: 1px solid var(--border);
@@ -1457,7 +1466,6 @@ img { display: block; }
   font-family: 'DM Sans', sans-serif;
   transition: all 0.2s;
   white-space: nowrap;
-  flex-shrink: 0;
 }
 .shap-sort-btn:hover { border-color: var(--accent); color: var(--text); }
 
@@ -1478,7 +1486,8 @@ img { display: block; }
 }
 .shap-leg-pos     { color: var(--green); }
 .shap-leg-neg     { color: var(--red);   }
-.shap-leg-neutral { color: var(--text2); }
-.shap-leg-abbr    { color: var(--text2); font-weight: 400; width: 100%; text-align: center; margin-top: 2px; }
+.shap-leg-neutral { color: #38bdf8;      }
+.shap-leg-abbr    { color: var(--text); font-weight: 400; width: 100%; text-align: center; margin-top: 2px; }
+.shap-abbr-key    { color: var(--text2); }
 
 
