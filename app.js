@@ -885,11 +885,46 @@ function renderCompChart(varKey, metricsData) {
 }
 
 // ── SHAP helpers ───────────────────────────────────────────────────────────
-function formatShapVar(name) {
-  return name
-    .replace(/_prom_3$/, ' · p3')
-    .replace(/_prom_5$/, ' · p5')
-    .replace(/Goles esperados \(xG\)/g, 'xG');
+let _shapAsc = false;
+
+const SHAP_VAR_NAMES = {
+  'goles':                     'Goles',
+  'Posesión de pelota':        'Posesión de Pelota',
+  'Goles esperados (xG)':      'xG',
+  'Tiros totales':             'Tiros Totales',
+  'Tiros a puerta':            'Tiros a Puerta',
+  'Disparos al palo':          'Disparos al Palo',
+  'Tiros fuera':               'Tiros Fuera',
+  'Tiros bloqueados':          'Tiros Bloqueados',
+  'Tiros adentro del area':    'Tiros Dentro del Área',
+  'Tiros desde fuera del area':'Tiros Fuera del Área',
+  'Fueras de juego':           'Fueras de Juego',
+  'Saques de banda':           'Saques de Banda',
+  'Pases al ultimo tercio':    'Pases Último Tercio',
+  'Entradas':                  'Entradas',
+  'Intercepciones':            'Intercepciones',
+  'Recuperaciones':            'Recuperaciones',
+  'Despejes':                  'Despejes',
+  'Corners':                   'Corners',
+  'Faltas':                    'Faltas',
+  'Tiros libres':              'Tiros Libres',
+  'Tarjetas amarillas':        'Tarjetas Amarillas',
+  'Tarjetas rojas':            'Tarjetas Rojas',
+  'Atajadas':                  'Atajadas',
+  'Saques de meta':            'Saques de Meta',
+  'precision_pases':           'Precisión Pases',
+  'precision_tiros':           'Precisión Tiros',
+  'conversion_xg':             'Conversión xG',
+  'ratio_area':                'Ratio Área',
+  'Local':                     'Local',
+};
+
+function formatShapVar(raw) {
+  const suffix = raw.endsWith('_prom_3') ? ' (prom. 3)'
+               : raw.endsWith('_prom_5') ? ' (prom. 5)'
+               : '';
+  const base = raw.replace(/_prom_[35]$/, '');
+  return (SHAP_VAR_NAMES[base] || base) + suffix;
 }
 
 function renderShapChart(target, shapData) {
@@ -897,12 +932,16 @@ function renderShapChart(target, shapData) {
   const canvas = document.getElementById('shap-bar-chart');
   if (!canvas || !shapData || !shapData[target]) return;
 
-  const items  = [...shapData[target]].reverse();
-  const labels = items.map(d => formatShapVar(d.variable));
-  const values = items.map(d => d.importancia);
-  const colors = items.map(d =>
-    d.direccion > 0.001  ? 'rgba(21,177,104,0.78)'  :
-    d.direccion < -0.001 ? 'rgba(226,75,74,0.78)'   :
+  // desc (default): más importante arriba → invertir array para Chart.js
+  const sorted = _shapAsc
+    ? [...shapData[target]]
+    : [...shapData[target]].reverse();
+
+  const labels = sorted.map(d => formatShapVar(d.variable));
+  const values = sorted.map(d => d.importancia);
+  const colors = sorted.map(d =>
+    d.direccion > 0.005  ? 'rgba(21,177,104,0.78)'  :
+    d.direccion < -0.005 ? 'rgba(226,75,74,0.78)'   :
                            'rgba(150,150,150,0.55)'
   );
 
@@ -941,6 +980,10 @@ function renderShapChart(target, shapData) {
       }
     }
   });
+
+  // Actualizar texto del botón
+  const btn = document.getElementById('shap-sort-btn');
+  if (btn) btn.textContent = _shapAsc ? '↑ Asc' : '↓ Desc';
 }
 
 // ── RENDIMIENTO TAB ────────────────────────────────────────────────────────
@@ -1064,16 +1107,19 @@ async function renderRendimientoTab() {
     // ── Sección Importancia de Variables (SHAP) ──────────────────────────
     let shapHtml = '';
     if (shapData) {
-      const shapTargets = { xg: 'xG ≥ 1.5', tiros: 'Tiros > 4', goles: 'Goles ≥ 2' };
+      const shapTargets = {
+        xg:    'Goles Esperados ≥ 1.5',
+        tiros: 'Tiros a Puerta ≥ 5',
+        goles: 'Goles Anotados ≥ 2',
+      };
       shapHtml = `
-        <div class="comp-header">
-          <span class="stats-tab-title">Importancia de Variables</span>
-          <span class="stats-tab-sub">XGBoost · mean |SHAP value| · Top 15</span>
-        </div>
-        <div class="comp-var-tabs" id="shap-var-tabs">
-          ${Object.entries(shapTargets).map(([k, label], i) => `
-            <button class="shap-var-tab${i === 0 ? ' active' : ''}" data-shap="${k}">${label}</button>
-          `).join('')}
+        <div class="shap-controls">
+          <div class="comp-var-tabs" id="shap-var-tabs">
+            ${Object.entries(shapTargets).map(([k, label], i) => `
+              <button class="shap-var-tab${i === 0 ? ' active' : ''}" data-shap="${k}">${label}</button>
+            `).join('')}
+          </div>
+          <button class="shap-sort-btn" id="shap-sort-btn">↓ Desc</button>
         </div>
         <div class="shap-chart-wrap">
           <canvas id="shap-bar-chart"></canvas>
@@ -1081,6 +1127,8 @@ async function renderRendimientoTab() {
         <div class="shap-legend">
           <span class="shap-leg-pos">▬ Aumenta probabilidad</span>
           <span class="shap-leg-neg">▬ Disminuye probabilidad</span>
+          <span class="shap-leg-neutral">▬ Efecto neutro</span>
+          <span class="shap-leg-abbr">· prom. 3 = promedio últimos 3 partidos · prom. 5 = promedio últimos 5 partidos</span>
         </div>`;
     } else {
       shapHtml = `<div style="padding:40px;color:var(--text3);font-size:13px;text-align:center">
@@ -1131,6 +1179,17 @@ async function renderRendimientoTab() {
           renderShapChart(btn.dataset.shap, shapData);
         });
       });
+
+      // Botón de orden asc/desc
+      const sortBtn = document.getElementById('shap-sort-btn');
+      if (sortBtn) {
+        sortBtn.addEventListener('click', () => {
+          _shapAsc = !_shapAsc;
+          const activeTab = document.querySelector('.shap-var-tab.active');
+          const target = activeTab ? activeTab.dataset.shap : 'xg';
+          renderShapChart(target, shapData);
+        });
+      }
     }
   } catch (_) {
     content.innerHTML = '<div class="empty-tab">No se pudo cargar el rendimiento del modelo</div>';

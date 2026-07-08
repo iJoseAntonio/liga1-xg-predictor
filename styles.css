@@ -1420,6 +1420,14 @@ img { display: block; }
   padding: 0 16px 28px;
 }
 
+.shap-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  margin-bottom: 18px;
+}
+
 .shap-var-tab {
   padding: 5px 16px;
   border: none;
@@ -1437,22 +1445,40 @@ img { display: block; }
   color: var(--text);
 }
 
+.shap-sort-btn {
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 5px 12px;
+  border-radius: 16px;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.shap-sort-btn:hover { border-color: var(--accent); color: var(--text); }
+
 .shap-chart-wrap {
   width: 100%;
   height: 430px;
   position: relative;
-  margin-top: 8px;
 }
 
 .shap-legend {
   display: flex;
-  gap: 20px;
+  flex-wrap: wrap;
+  gap: 6px 18px;
   justify-content: center;
   margin-top: 14px;
   font-size: 11px;
   font-weight: 500;
 }
-.shap-leg-pos { color: var(--green); }
-.shap-leg-neg { color: var(--red);   }
+.shap-leg-pos     { color: var(--green); }
+.shap-leg-neg     { color: var(--red);   }
+.shap-leg-neutral { color: var(--text2); }
+.shap-leg-abbr    { color: var(--text2); font-weight: 400; width: 100%; text-align: center; margin-top: 2px; }
 
 
