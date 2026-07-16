@@ -1,0 +1,39 @@
+{
+  "goles": {
+    "label": "Goles ≥ 2",
+    "modelos": [
+      {
+        "nombre": "XGBoost",
+        "accuracy": 0.5735,
+        "auc_roc": 0.5496,
+        "f1": 0.3023,
+        "precision": 0.4286,
+        "recall": 0.2335
+      },
+      {
+        "nombre": "LightGBM",
+        "accuracy": 0.5664,
+        "auc_roc": 0.5501,
+        "f1": 0.3042,
+        "precision": 0.4167,
+        "recall": 0.2395
+      },
+      {
+        "nombre": "Random Forest",
+        "accuracy": 0.5877,
+        "auc_roc": 0.58,
+        "f1": 0.304,
+        "precision": 0.4578,
+        "recall": 0.2275
+      },
+      {
+        "nombre": "Logistic Regression",
+        "accuracy": 0.6019,
+        "auc_roc": 0.6183,
+        "f1": 0.4783,
+        "precision": 0.4968,
+        "recall": 0.4611
+      }
+    ]
+  }
+}

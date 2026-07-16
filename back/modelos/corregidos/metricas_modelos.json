@@ -1,0 +1,113 @@
+{
+  "xg": {
+    "label": "Goles Esperados ≥ 1.5",
+    "modelos": [
+      {
+        "nombre": "XGBoost",
+        "accuracy": 0.6469,
+        "auc_roc": 0.63,
+        "f1": 0.4582,
+        "precision": 0.5294,
+        "recall": 0.4038
+      },
+      {
+        "nombre": "LightGBM",
+        "accuracy": 0.6422,
+        "auc_roc": 0.6109,
+        "f1": 0.4302,
+        "precision": 0.5229,
+        "recall": 0.3654
+      },
+      {
+        "nombre": "Random Forest",
+        "accuracy": 0.6256,
+        "auc_roc": 0.6307,
+        "f1": 0.4317,
+        "precision": 0.4918,
+        "recall": 0.3846
+      },
+      {
+        "nombre": "Logistic Regression",
+        "accuracy": 0.6303,
+        "auc_roc": 0.6725,
+        "f1": 0.5491,
+        "precision": 0.5,
+        "recall": 0.609
+      }
+    ]
+  },
+  "tiros": {
+    "label": "Tiros a Puerta ≥ 5",
+    "modelos": [
+      {
+        "nombre": "XGBoost",
+        "accuracy": 0.6043,
+        "auc_roc": 0.6133,
+        "f1": 0.4698,
+        "precision": 0.5139,
+        "recall": 0.4327
+      },
+      {
+        "nombre": "LightGBM",
+        "accuracy": 0.6043,
+        "auc_roc": 0.5969,
+        "f1": 0.4377,
+        "precision": 0.5159,
+        "recall": 0.3801
+      },
+      {
+        "nombre": "Random Forest",
+        "accuracy": 0.628,
+        "auc_roc": 0.6248,
+        "f1": 0.5016,
+        "precision": 0.5486,
+        "recall": 0.462
+      },
+      {
+        "nombre": "Logistic Regression",
+        "accuracy": 0.5995,
+        "auc_roc": 0.6324,
+        "f1": 0.5185,
+        "precision": 0.5056,
+        "recall": 0.5322
+      }
+    ]
+  },
+  "goles": {
+    "label": "Goles Anotados ≥ 2",
+    "modelos": [
+      {
+        "nombre": "XGBoost",
+        "accuracy": 0.5735,
+        "auc_roc": 0.5496,
+        "f1": 0.3023,
+        "precision": 0.4286,
+        "recall": 0.2335
+      },
+      {
+        "nombre": "LightGBM",
+        "accuracy": 0.5664,
+        "auc_roc": 0.5501,
+        "f1": 0.3042,
+        "precision": 0.4167,
+        "recall": 0.2395
+      },
+      {
+        "nombre": "Random Forest",
+        "accuracy": 0.5877,
+        "auc_roc": 0.58,
+        "f1": 0.304,
+        "precision": 0.4578,
+        "recall": 0.2275
+      },
+      {
+        "nombre": "Logistic Regression",
+        "accuracy": 0.6019,
+        "auc_roc": 0.6183,
+        "f1": 0.4783,
+        "precision": 0.4968,
+        "recall": 0.4611
+      }
+    ]
+  }
+}

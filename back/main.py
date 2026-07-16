@@ -28,10 +28,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-MODEL_XG_PATH    = "Hiperparametros_Finales/Goles_Esperadas/modelo_xgboost_xg.pkl"
-MODEL_TIROS_PATH = "Hiperparametros_Finales/Tiros_Puerta/modelo_xgboost_tiros.pkl"
-MODEL_GOLES_PATH = "Hiperparametros_Finales/Goles/modelo_xgboost_liga1_goles.pkl"
-DATA_PATH        = "bd_liga1.csv"
+MODEL_XG_PATH    = "modelos/corregidos/Goles_Esperadas/modelo_xgboost_liga1_xg.pkl"
+MODEL_TIROS_PATH = "modelos/corregidos/Tiros_Puerta/modelo_xgboost_liga1_tiros.pkl"
+MODEL_GOLES_PATH = "modelos/corregidos/Goles/modelo_xgboost_liga1_goles.pkl"
+DATA_PATH        = "data/bd_liga1.csv"
 
 modelo_xg      = None
 modelo_tiros   = None
@@ -184,7 +184,7 @@ def run_model(modelo, stats: dict) -> tuple[float, int]:
 
 
 def _load_date_round_map() -> dict:
-    path = "partidos_liga1_2026.csv"
+    path = "data/partidos_liga1_2026.csv"
     if not os.path.exists(path):
         return {}
     try:
@@ -436,7 +436,7 @@ def team_rankings(request: Request):
         raise HTTPException(status_code=503, detail="Datos no disponibles")
 
     valid_teams: set = set()
-    partidos_path = "partidos_liga1_2026.csv"
+    partidos_path = "data/partidos_liga1_2026.csv"
     if os.path.exists(partidos_path):
         try:
             df_p = pd.read_csv(partidos_path, sep=';', encoding='utf-8-sig')
@@ -495,7 +495,7 @@ def team_rankings(request: Request):
 @app.get("/model-metrics")
 @limiter.limit("60/minute")
 def model_metrics(request: Request):
-    path = "metricas_modelos.json"
+    path = "modelos/corregidos/metricas_modelos.json"
     if not os.path.exists(path):
         raise HTTPException(status_code=404, detail="metricas_modelos.json no encontrado")
     try:
@@ -508,7 +508,7 @@ def model_metrics(request: Request):
 @app.get("/shap-values")
 @limiter.limit("60/minute")
 def shap_values_endpoint(request: Request):
-    path = "shap_values.json"
+    path = "modelos/shap_values.json"
     if not os.path.exists(path):
         raise HTTPException(status_code=404, detail="shap_values.json no encontrado")
     try:
