@@ -11,7 +11,8 @@ Tesis — UNMSM, Facultad de Ingeniería de Sistemas e Informática.
 │   ├── .python-version
 │   ├── data/                     ← Datos consumidos por el backend
 │   │   ├── bd_liga1.csv           ← Dataset histórico (se actualiza por jornada)
-│   │   └── partidos_liga1_2026.csv← Fixture de la temporada actual
+│   │   └── partidos_liga1_2026.csv← Fixture de la temporada actual (⚠ duplicado
+│   │                                 en frontend/, ver nota abajo)
 │   └── modelos/
 │       ├── shap_values.json       ← Valores SHAP (endpoint /shap-values)
 │       ├── corregidos/            ← Modelos vigentes (usados por main.py)
@@ -26,7 +27,8 @@ Tesis — UNMSM, Facultad de Ingeniería de Sistemas e Informática.
 │   ├── index.html
 │   ├── app.js
 │   ├── styles.css
-│   └── tabla_liga1_peru.csv      ← Tabla de posiciones, leída client-side
+│   ├── tabla_liga1_peru.csv      ← Tabla de posiciones, leída client-side
+│   └── partidos_liga1_2026.csv   ← Fixture, leído client-side (duplicado de back/data/)
 │
 └── notebooks/                   ← Notebooks de análisis y entrenamiento
     ├── Ingenieria_Caracteristicas_Modelos_Predictivos.ipynb
@@ -55,6 +57,11 @@ git add .
 git commit -m "jornada X actualizada"
 git push
 ```
+
+> **⚠ `partidos_liga1_2026.csv` está duplicado** en `back/data/` (lo usa `main.py`
+> en el servidor) y en `frontend/` (lo descarga el navegador directamente, sin pasar
+> por la API). Cada vez que actualices este archivo, cópialo a **ambas** rutas —
+> si solo actualizas una, el fixture quedará desincronizado entre la API y el sitio.
 
 ## Render — configuración
 - **Runtime:** Python 3
