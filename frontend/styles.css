@@ -12,6 +12,8 @@
   --text3:     #555;
   --accent:    #6c63ff;
   --green:     #15b168;
+  --green2:    #6fcf97;
+  --blue:      #2f9bf0;
   --red:       #e24b4a;
   --yellow:    #f0a500;
   --gray:      #555;
@@ -553,8 +555,10 @@ img { display: block; }
 .team-row:hover { background: var(--surface3); }
 
 /* Zone stripes */
-.team-row.playoff-zone   { border-left-color: var(--yellow); }
-.team-row.relegation-zone{ border-left-color: var(--red); }
+.team-row.liber-directa-zone { border-left-color: var(--green); }
+.team-row.liber-clasif-zone  { border-left-color: var(--green2); }
+.team-row.sudamericana-zone  { border-left-color: var(--blue); }
+.team-row.relegation-zone    { border-left-color: var(--red); }
 
 .zone-indicator { width: 4px; }
 
@@ -571,8 +575,10 @@ img { display: block; }
   color: var(--text2);
   justify-self: center;
 }
-.pos-circle.playoff    { background: var(--yellow); color: #1a1200; }
-.pos-circle.relegation { background: var(--red);    color: #fff; }
+.pos-circle.liber-directa { background: var(--green);  color: #06210f; }
+.pos-circle.liber-clasif  { background: var(--green2); color: #0a1f13; }
+.pos-circle.sudamericana  { background: var(--blue);   color: #071a2e; }
+.pos-circle.relegation    { background: var(--red);    color: #fff; }
 
 .team-cell {
   display: flex;
@@ -655,8 +661,10 @@ img { display: block; }
   color: var(--text);
 }
 .leg-dot { width: 8px; height: 8px; border-radius: 50%; }
-.playoff-dot    { background: var(--yellow); }
-.relegation-dot { background: var(--red); }
+.liber-directa-dot { background: var(--green); }
+.liber-clasif-dot  { background: var(--green2); }
+.sudamericana-dot  { background: var(--blue); }
+.relegation-dot    { background: var(--red); }
 
 .col-legend {
   display: flex;

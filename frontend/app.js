@@ -6,7 +6,6 @@
 'use strict';
 
 // ── CONFIGURACIÓN ────────────────────────────────────────────────────────
-const CSV_PATH         = 'tabla_liga1_peru.csv';
 const MATCHES_CSV_PATH = 'partidos_liga1_2026.csv';
 // Reemplaza con tu URL de Render una vez desplegado:
 const API_URL          = 'https://api.data-sport.win';
@@ -42,9 +41,6 @@ const TEAM_NAME_MAP = {
   'CD Juan Pablo II': 'ADC Juan Pablo II',
 };
 
-// Zonas de la tabla (posiciones)
-const PLAYOFF_POS    = [1];         // Amarillo
-const RELEGATION_POS = [17, 18];    // Rojo
 
 // Partidos cargados dinámicamente desde partidos_liga1_2026.csv
 let MATCHES = {};
@@ -54,6 +50,7 @@ let currentRound  = 17;
 let ROUND_MAX     = 17;
 const ROUND_MIN   = 1;
 let standingsData = [];
+let teamZoneMap    = {};   // equipo -> zona real (según tabla "Todos")
 const predCache   = {};
 let _statsLoaded  = false;
 let _rendLoaded   = false;
@@ -202,32 +199,31 @@ function loadMatchesCSV() {
       renderMatches(currentRound);
       renderDestacado(currentRound);
       if (isPredTabActive()) renderPredictionsTab(currentRound);
+
+      computeStandings();
     },
   });
 }
 
-// ── CSV LOADER ────────────────────────────────────────────────────────────
-function loadCSV() {
+// ── TABLA CALCULADA (a partir de MATCHES, se actualiza sola con cada partido nuevo) ──
+function computeStandings() {
   $loading().style.display  = 'flex';
   $error().style.display    = 'none';
   $tableWrap().style.display = 'none';
 
-  Papa.parse(CSV_PATH, {
-    download: true,
-    header:   true,
-    skipEmptyLines: true,
-    complete: (results) => {
-      if (!results.data || results.data.length === 0) {
-        showError();
-        return;
-      }
-      standingsData = results.data;
-      $loading().style.display   = 'none';
-      $tableWrap().style.display = 'block';
-      renderStandings(standingsData);
-    },
-    error: () => showError(),
-  });
+  standingsData = computeFilteredStandings('all');
+  if (!standingsData.length) {
+    showError();
+    return;
+  }
+  teamZoneMap = computeTeamZones(standingsData);
+
+  $loading().style.display   = 'none';
+  $tableWrap().style.display = 'block';
+
+  const activeSub = document.querySelector('.sub-tab.active');
+  const filter    = activeSub ? activeSub.dataset.filter : 'all';
+  renderStandings(computeFilteredStandings(filter));
 }
 
 function showError() {
@@ -259,14 +255,16 @@ function renderStandings(data) {
     const pts = nv(row['Puntos']);
     const forma = (row['Ultimos_5'] || '').trim();
 
-    // Separadores de zona
-    if (pos === 2)  html += `<div class="zone-sep"></div>`;
-    if (pos === 17) html += `<div class="zone-sep"></div>`;
+    // Separadores de zona (1-2 / 3-4 / 5-8 / 9-16 / 17-18)
+    if (pos === 3 || pos === 5 || pos === 9 || pos === 17) {
+      html += `<div class="zone-sep"></div>`;
+    }
 
-    const isPlayoff    = PLAYOFF_POS.includes(pos);
-    const isRelegation = RELEGATION_POS.includes(pos);
-    const rowClass = isPlayoff ? 'playoff-zone' : isRelegation ? 'relegation-zone' : '';
-    const circleClass = isPlayoff ? 'playoff' : isRelegation ? 'relegation' : '';
+    // Color según el ranking REAL del equipo (tabla "Todos"), no su posición
+    // dentro de la vista filtrada actual (Local/Visitante).
+    const zone = teamZoneMap[name] || '';
+    const rowClass    = zone ? `${zone}-zone` : '';
+    const circleClass = zone;
 
     const formaHtml = forma.split('').map(formBox).join('');
 
@@ -1200,26 +1198,36 @@ async function renderRendimientoTab() {
 }
 
 function computeFilteredStandings(filter) {
-  if (filter === 'all' || !Object.keys(MATCHES).length) return standingsData;
+  if (!Object.keys(MATCHES).length) return [];
 
-  const isHome = filter === 'home';
-  const teams  = {};
+  const teams = {};
+  const ensure = (name) => {
+    if (!teams[name]) teams[name] = { pj:0, pg:0, pe:0, pp:0, gf:0, ga:0, forma:[] };
+    return teams[name];
+  };
+  const applySide = (team, gf, ga) => {
+    const t = ensure(team);
+    t.pj++; t.gf += gf; t.ga += ga;
+    if      (gf > ga)  { t.pg++; t.forma.push('V'); }
+    else if (gf === ga) { t.pe++; t.forma.push('E'); }
+    else               { t.pp++; t.forma.push('D'); }
+  };
 
   Object.values(MATCHES).forEach(roundMatches => {
     roundMatches.forEach(m => {
       if (m.sh === null) return; // partido no jugado
 
-      const rawName = isHome ? m.homeName : m.awayName;
-      const team    = TEAM_NAME_MAP[rawName] || rawName;
-      const gf      = isHome ? m.sh : m.sa;
-      const ga      = isHome ? m.sa : m.sh;
+      const homeTeam = TEAM_NAME_MAP[m.homeName] || m.homeName;
+      const awayTeam = TEAM_NAME_MAP[m.awayName] || m.awayName;
 
-      if (!teams[team]) teams[team] = { pj:0, pg:0, pe:0, pp:0, gf:0, ga:0, forma:[] };
-      const t = teams[team];
-      t.pj++; t.gf += gf; t.ga += ga;
-      if      (gf > ga)  { t.pg++; t.forma.push('V'); }
-      else if (gf === ga) { t.pe++; t.forma.push('E'); }
-      else               { t.pp++; t.forma.push('D'); }
+      if (filter === 'home') {
+        applySide(homeTeam, m.sh, m.sa);
+      } else if (filter === 'away') {
+        applySide(awayTeam, m.sa, m.sh);
+      } else {
+        applySide(homeTeam, m.sh, m.sa);
+        applySide(awayTeam, m.sa, m.sh);
+      }
     });
   });
 
@@ -1243,6 +1251,23 @@ function computeFilteredStandings(filter) {
   result.sort((a, b) => b.Puntos - a.Puntos || b._dif - a._dif || 0);
   result.forEach((r, i) => { r.Posicion = i + 1; });
   return result;
+}
+
+// Mapea cada equipo a su zona real, según su posición en la tabla general "Todos".
+// Se usa para colorear las filas en las sub-pestañas Local/Visitante con el
+// ranking verdadero del equipo, no con su posición dentro de la vista filtrada.
+function computeTeamZones(overallStandings) {
+  const map = {};
+  overallStandings.forEach(r => {
+    const pos = r.Posicion;
+    let zone = '';
+    if      (pos <= 2) zone = 'liber-directa';
+    else if (pos <= 4) zone = 'liber-clasif';
+    else if (pos <= 8) zone = 'sudamericana';
+    else if (pos >= 17) zone = 'relegation';
+    map[r.Equipo] = zone;
+  });
+  return map;
 }
 
 function setupSubTabs() {
@@ -1274,11 +1299,8 @@ document.addEventListener('DOMContentLoaded', () => {
   buildRoundSelect();
   setupRoundNav();
 
-  // Load matches from CSV (renders after load)
+  // Load matches from CSV (renders standings after load)
   loadMatchesCSV();
-
-  // Load CSV for standings
-  loadCSV();
 
   // Progress bar temporada
   updateProgress();

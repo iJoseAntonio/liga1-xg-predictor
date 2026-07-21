@@ -1,5 +1,6 @@
 # Notebooks
 *.ipynb
+notebooks/
 
 # Virtual environment
 env_liga1/
