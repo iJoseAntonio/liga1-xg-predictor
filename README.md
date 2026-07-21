@@ -27,8 +27,10 @@ Tesis — UNMSM, Facultad de Ingeniería de Sistemas e Informática.
 │   ├── index.html
 │   ├── app.js
 │   ├── styles.css
-│   ├── tabla_liga1_peru.csv      ← Tabla de posiciones, leída client-side
-│   └── partidos_liga1_2026.csv   ← Fixture, leído client-side (duplicado de back/data/)
+│   └── partidos_liga1_2026.csv   ← Fixture, leído client-side (duplicado de back/data/).
+│                                    La tabla de posiciones (Todos/Local/Visitante) se
+│                                    calcula en app.js a partir de este archivo, ya no
+│                                    depende de un CSV estático de posiciones.
 │
 └── notebooks/                   ← Notebooks de análisis y entrenamiento
     ├── Ingenieria_Caracteristicas_Modelos_Predictivos.ipynb

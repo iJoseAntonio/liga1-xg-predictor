@@ -1,6 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════════════
    app.js  —  Liga 1 Perú Dashboard
-   Lee tabla_liga1_peru.csv con PapaParse e inyecta los datos en el DOM.
+   Lee partidos_liga1_2026.csv con PapaParse, calcula la tabla de posiciones
+   (Todos/Local/Visitante) a partir de los resultados y la inyecta en el DOM.
    ═══════════════════════════════════════════════════════════════════════ */
 
 'use strict';
@@ -33,7 +34,7 @@ const TEAM_IDS = {
   'Atletico Grau':      282538,
   'Sport Huancayo':     33895,
   'ADC Juan Pablo II':  511206,
-  'CD Juan Pablo II':   511206,   // alias: nombre en tabla_liga1_peru.csv
+  'CD Juan Pablo II':   511206,   // alias visto en algunos partidos scrapeados
 };
 
 // Normaliza nombres inconsistentes entre CSVs
