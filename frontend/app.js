@@ -938,11 +938,6 @@ function renderShapChart(target, shapData) {
 
   const labels = sorted.map(d => formatShapVar(d.variable));
   const values = sorted.map(d => d.importancia);
-  const colors = sorted.map(d => {
-    const ratio = d.importancia > 0 ? Math.abs(d.direccion) / d.importancia : 0;
-    if (ratio < 0.10) return 'rgba(56,189,248,0.72)';
-    return d.direccion > 0 ? 'rgba(21,177,104,0.78)' : 'rgba(226,75,74,0.78)';
-  });
 
   _shapChart = new Chart(canvas, {
     type: 'bar',
@@ -950,7 +945,7 @@ function renderShapChart(target, shapData) {
       labels,
       datasets: [{
         data: values,
-        backgroundColor: colors,
+        backgroundColor: 'rgba(108,99,255,0.78)', // var(--accent) — color de marca del sitio
         borderRadius: 4,
         borderSkipped: false,
       }]
@@ -1126,9 +1121,6 @@ async function renderRendimientoTab() {
             <canvas id="shap-bar-chart"></canvas>
           </div>
           <div class="shap-legend">
-            <span class="shap-leg-pos">▬ Aumenta probabilidad</span>
-            <span class="shap-leg-neg">▬ Disminuye probabilidad</span>
-            <span class="shap-leg-neutral">▬ Efecto neutro</span>
             <span class="shap-leg-abbr"><span class="shap-abbr-key">prom. 3</span> = promedio últimos 3 partidos &nbsp;·&nbsp; <span class="shap-abbr-key">prom. 5</span> = promedio últimos 5 partidos</span>
           </div>
         </div>`;
