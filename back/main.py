@@ -183,30 +183,49 @@ def run_model(modelo, stats: dict) -> tuple[float, int]:
     return round(prob * 100, 1), clase
 
 
-def _load_date_round_map() -> dict:
+def _load_date_round_map() -> tuple[dict, dict]:
+    """
+    Devuelve (date_round, round_label):
+      - date_round: fecha normalizada -> número de ronda GLOBAL secuencial
+        (cronológico, sin colisión entre etapas: Apertura 1..17, Clausura 1..N)
+      - round_label: número de ronda global -> etiqueta a mostrar
+        (ej. "Apertura 13", "Clausura 1")
+    """
     path = "data/partidos_liga1_2026.csv"
     if not os.path.exists(path):
-        return {}
+        return {}, {}
     try:
         df_p = pd.read_csv(path, sep=';', encoding='utf-8-sig')
         df_p.columns = df_p.columns.str.strip()
-        mapping = {}
+
+        grupos: dict = {}  # (etapa, num) -> lista de fechas
         for _, row in df_p.iterrows():
             jornada = str(row.get('Jornada', '')).strip()
-            m = re.search(r'(\d+)', jornada)
+            m = re.match(r'^(.*?)\s+(\d+)$', jornada)
             if not m:
                 continue
-            rnd = int(m.group(1))
+            etapa, num = m.group(1).strip(), int(m.group(2))
             fecha = pd.to_datetime(
                 str(row.get('fecha', '')).strip(), format='%d/%m/%Y', errors='coerce'
             )
-            if pd.notna(fecha):
-                mapping[fecha.normalize()] = rnd
-        print(f"Round map cargado: {len(set(mapping.values()))} jornadas.")
-        return mapping
+            if pd.isna(fecha):
+                continue
+            grupos.setdefault((etapa, num), []).append(fecha.normalize())
+
+        # Numerar secuencialmente por fecha mínima de cada grupo (etapa, num)
+        ordenados = sorted(grupos.items(), key=lambda kv: min(kv[1]))
+
+        date_round, round_label = {}, {}
+        for i, ((etapa, num), fechas) in enumerate(ordenados, start=1):
+            round_label[i] = f"{etapa} {num}"
+            for f in fechas:
+                date_round[f] = i
+
+        print(f"Round map cargado: {len(ordenados)} jornadas.")
+        return date_round, round_label
     except Exception as e:
         print(f"Error cargando round map: {e}")
-        return {}
+        return {}, {}
 
 
 def _precompute_performance():
@@ -220,7 +239,7 @@ def _precompute_performance():
         print("Rendimiento: sin datos post-corte disponibles.")
         return
 
-    date_round = _load_date_round_map()
+    date_round, round_label = _load_date_round_map()
 
     records = []
     for _, match in post.iterrows():
@@ -283,8 +302,9 @@ def _precompute_performance():
 
     rounds_out = []
     for r, g in df_r.groupby('rnd'):
+        r_int = int(r)
         rounds_out.append({
-            'jornada':   int(r),
+            'jornada':   round_label.get(r_int, str(r_int)),
             'fecha':     g['fecha'].min().strftime('%d/%m/%Y'),
             'total':     len(g),
             'xg_pct':    round(float(g['xg_ok'].mean())    * 100, 1),
