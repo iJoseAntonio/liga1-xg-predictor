@@ -1,13 +1,22 @@
 ﻿fecha;Jornada;equipo_local;equipo_visitante;goles_local;goles_visitante;Hora;url_partido
-28/08/2026;Clausura 7;Comerciantes Unidos;Cajamarca;;;15:30;https://www.sofascore.com/es-la/football/match/fc-cajamarca-comerciantes-unidos/jxKbscPHi#id:16280810
-29/08/2026;Clausura 7;Los Chankas;ADC Juan Pablo II;;;13:00;https://www.sofascore.com/es-la/football/match/cd-juan-pablo-ii-los-chankas-cyc/eVacsgzee#id:16280809
-29/08/2026;Clausura 7;UTC;Universitario;;;15:30;https://www.sofascore.com/es-la/football/match/universidad-tecnica-de-cajamarca-universitario-de-deportes/fWsehK#id:16280807
-29/08/2026;Clausura 7;Alianza Lima;Deportivo Garcilaso;;;15:30;https://www.sofascore.com/es-la/football/match/deportivo-garcilaso-alianza-lima/lWsJwId#id:16280808
-30/08/2026;Clausura 7;Moquegua;Alianza Atlético;;;11:00;https://www.sofascore.com/es-la/football/match/cd-moquegua-alianza-atletico-de-sullana/hWsYgXd#id:16281132
-30/08/2026;Clausura 7;ADT;Sport Huancayo;;;13:15;https://www.sofascore.com/es-la/football/match/asociacion-deportiva-tarma-sport-huancayo/VCnshlJc#id:16281130
-30/08/2026;Clausura 7;Sport Boys;Sporting Cristal;;;15:30;https://www.sofascore.com/es-la/football/match/sport-boys-club-sporting-cristal/cWsmW#id:16280815
-30/08/2026;Clausura 7;Cienciano;Cusco;;;19:00;https://www.sofascore.com/es-la/football/match/cusco-fc-cienciano/bWskAA#id:16280811
-31/08/2026;Clausura 7;Atlético Grau;Melgar;;;15:00;https://www.sofascore.com/es-la/football/match/club-atletico-grau-melgar/iWsNanc#id:16280812
+4/09/2026;Clausura 8;Cajamarca;Cienciano;;;13:30;https://www.sofascore.com/es-la/football/match/fc-cajamarca-cienciano/bWscPHi#id:16281131
+4/09/2026;Clausura 8;Alianza Atlético;UTC;;;13:30;https://www.sofascore.com/es-la/football/match/universidad-tecnica-de-cajamarca-alianza-atletico-de-sullana/hWsehK#id:16280814
+5/09/2026;Clausura 8;Sport Huancayo;Sport Boys;;;13:30;https://www.sofascore.com/es-la/football/match/sport-huancayo-sport-boys/mWsVCn#id:16280817
+5/09/2026;Clausura 8;Cusco;Moquegua;;;13:30;https://www.sofascore.com/es-la/football/match/cd-moquegua-cusco-fc/kAAsYgXd#id:16280813
+5/09/2026;Clausura 8;Universitario;Comerciantes Unidos;;;13:30;https://www.sofascore.com/es-la/football/match/comerciantes-unidos-universitario-de-deportes/fWsjxKb#id:16280819
+6/09/2026;Clausura 8;Sporting Cristal;Los Chankas;;;11:00;https://www.sofascore.com/es-la/football/match/los-chankas-cyc-club-sporting-cristal/cWseVac#id:16280818
+6/09/2026;Clausura 8;Deportivo Garcilaso;Atlético Grau;;;13:30;https://www.sofascore.com/es-la/football/match/deportivo-garcilaso-club-atletico-grau/NancsJwId#id:16280816
+6/09/2026;Clausura 8;ADC Juan Pablo II;Alianza Lima;;;15:00;https://www.sofascore.com/es-la/football/match/cd-juan-pablo-ii-alianza-lima/lWsgzee#id:16281135
+6/09/2026;Clausura 8;Melgar;ADT;;;18:30;https://www.sofascore.com/es-la/football/match/asociacion-deportiva-tarma-melgar/iWshlJc#id:16280821
+28/08/2026;Clausura 7;Comerciantes Unidos;Cajamarca;2;3;No;https://www.sofascore.com/es-la/football/match/fc-cajamarca-comerciantes-unidos/jxKbscPHi#id:16280810
+29/08/2026;Clausura 7;Los Chankas;ADC Juan Pablo II;3;4;No;https://www.sofascore.com/es-la/football/match/cd-juan-pablo-ii-los-chankas-cyc/eVacsgzee#id:16280809
+29/08/2026;Clausura 7;UTC;Universitario;2;4;No;https://www.sofascore.com/es-la/football/match/universidad-tecnica-de-cajamarca-universitario-de-deportes/fWsehK#id:16280807
+29/08/2026;Clausura 7;Alianza Lima;Deportivo Garcilaso;0;1;No;https://www.sofascore.com/es-la/football/match/deportivo-garcilaso-alianza-lima/lWsJwId#id:16280808
+30/08/2026;Clausura 7;Moquegua;Alianza Atlético;1;4;No;https://www.sofascore.com/es-la/football/match/cd-moquegua-alianza-atletico-de-sullana/hWsYgXd#id:16281132
+30/08/2026;Clausura 7;ADT;Sport Huancayo;1;3;No;https://www.sofascore.com/es-la/football/match/asociacion-deportiva-tarma-sport-huancayo/VCnshlJc#id:16281130
+30/08/2026;Clausura 7;Sport Boys;Sporting Cristal;1;0;No;https://www.sofascore.com/es-la/football/match/sport-boys-club-sporting-cristal/cWsmW#id:16280815
+30/08/2026;Clausura 7;Cienciano;Cusco;1;2;No;https://www.sofascore.com/es-la/football/match/cusco-fc-cienciano/bWskAA#id:16280811
+31/08/2026;Clausura 7;Atlético Grau;Melgar;1;0;No;https://www.sofascore.com/es-la/football/match/club-atletico-grau-melgar/iWsNanc#id:16280812
 21/08/2026;Clausura 6;Cajamarca;Atlético Grau;1;3;No;https://www.sofascore.com/es-la/football/match/fc-cajamarca-club-atletico-grau/NancscPHi#id:16281129
 21/08/2026;Clausura 6;Alianza Atlético;Sporting Cristal;3;1;No;https://www.sofascore.com/es-la/football/match/alianza-atletico-de-sullana-club-sporting-cristal/cWshW#id:16280801
 22/08/2026;Clausura 6;Sport Huancayo;Moquegua;0;2;No;https://www.sofascore.com/es-la/football/match/cd-moquegua-sport-huancayo/VCnsYgXd#id:16280683
